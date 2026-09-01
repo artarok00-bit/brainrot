@@ -1,5 +1,5 @@
--- [[ Платформа-невидимка с подъёмом ]]
--- Создаёт платформу под игроком, поднимает на высоту, двигается за ним
+-- [[ Платформа-невидимка (РАБОЧАЯ) ]]
+-- Поднимает игрока, создаёт платформу под ногами, двигается за ним
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -10,6 +10,7 @@ local IsActive = false
 local TargetHeight = 10
 local MoveSpeed = 50
 local Minimized = false
+local HeartbeatConnection = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -157,14 +158,14 @@ SpeedCorner.Parent = SpeedInput
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 18)
 StatusLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
-StatusLabel.Text = "🟢 Включена"
-StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+StatusLabel.Text = "🔴 Выключена"
+StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
 StatusLabel.TextSize = 11
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- ===== СОЗДАНИЕ ПЛАТФОРМЫ =====
+-- ===== ФУНКЦИЯ СОЗДАНИЯ ПЛАТФОРМЫ =====
 
 local function CreatePlatform()
     if Platform then
@@ -178,10 +179,10 @@ local function CreatePlatform()
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return end
     
-    -- Невидимая платформа
+    -- Платформа (невидимая, с коллизией)
     Platform = Instance.new("Part")
     Platform.Name = "PlayerPlatform"
-    Platform.Size = Vector3.new(6, 0.5, 6)
+    Platform.Size = Vector3.new(8, 0.5, 8)
     Platform.CFrame = RootPart.CFrame - Vector3.new(0, TargetHeight, 0)
     Platform.Anchored = true
     Platform.CanCollide = true
@@ -189,8 +190,27 @@ local function CreatePlatform()
     Platform.Material = Enum.Material.Plastic
     Platform.Parent = workspace
     
-    -- Делаем невидимой для других (опционально)
+    -- Делаем невидимой
     Platform.LocalTransparencyModifier = 1
+end
+
+-- ===== ФУНКЦИЯ ПОДНЯТЬ ПЕРСОНАЖА =====
+
+local function LiftPlayer()
+    local Character = Player.Character
+    if not Character then return end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    local Humanoid = Character:FindFirstChild("Humanoid")
+    
+    if not RootPart or not Humanoid then return end
+    
+    -- Поднимаем персонажа на платформу
+    local TargetPos = RootPart.Position + Vector3.new(0, TargetHeight + 2, 0)
+    RootPart.CFrame = CFrame.new(TargetPos)
+    
+    -- Включаем PlatformStand чтобы не падал
+    Humanoid.PlatformStand = true
 end
 
 -- ===== ОБНОВЛЕНИЕ ПОЗИЦИИ ПЛАТФОРМЫ =====
@@ -204,17 +224,17 @@ local function UpdatePlatform()
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return end
     
-    -- Высота над платформой
+    -- Платформа всегда под игроком
     local TargetPos = RootPart.Position - Vector3.new(0, TargetHeight, 0)
     
-    -- Плавное движение к игроку
+    -- Плавное движение
     local CurrentPos = Platform.Position
     local NewPos = CurrentPos:Lerp(TargetPos, MoveSpeed / 100)
     
     Platform.CFrame = CFrame.new(NewPos)
 end
 
--- ===== ВКЛЮЧЕНИЕ/ВЫКЛЮЧЕНИЕ =====
+-- ===== ВКЛЮЧЕНИЕ =====
 
 local function Enable()
     if IsActive then return end
@@ -225,25 +245,24 @@ local function Enable()
     StatusLabel.Text = "🟢 Включена"
     StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
     
+    -- Создаём платформу
     CreatePlatform()
     
-    -- Запускаем обновление позиции
-    RunService.Heartbeat:Connect(function()
-        if IsActive then
-            UpdatePlatform()
-        end
-    end)
+    -- Поднимаем игрока
+    task.wait(0.1)
+    LiftPlayer()
     
-    -- Поднимаем персонажа
-    local Character = Player.Character
-    if Character then
-        local Humanoid = Character:FindFirstChild("Humanoid")
-        if Humanoid then
-            Humanoid.PlatformStand = true
-            Humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)
-        end
+    -- Запускаем обновление
+    if HeartbeatConnection then
+        HeartbeatConnection:Disconnect()
     end
+    
+    HeartbeatConnection = RunService.Heartbeat:Connect(function()
+        UpdatePlatform()
+    end)
 end
+
+-- ===== ВЫКЛЮЧЕНИЕ =====
 
 local function Disable()
     if not IsActive then return end
@@ -253,6 +272,11 @@ local function Disable()
     ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
     StatusLabel.Text = "🔴 Выключена"
     StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
+    
+    if HeartbeatConnection then
+        HeartbeatConnection:Disconnect()
+        HeartbeatConnection = nil
+    end
     
     if Platform then
         Platform:Destroy()
@@ -276,6 +300,7 @@ HeightInput.FocusLost:Connect(function()
         TargetHeight = val
         if IsActive then
             CreatePlatform()
+            LiftPlayer()
         end
     else
         HeightInput.Text = tostring(TargetHeight)
@@ -302,11 +327,20 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Пересоздание платформы при смене персонажа
-Player.CharacterAdded:Connect(function()
-    task.wait(0.5)
+-- Пересоздание при смене персонажа
+Player.CharacterAdded:Connect(function(NewChar)
+    task.wait(1)
     if IsActive then
         CreatePlatform()
+        LiftPlayer()
+    end
+end)
+
+-- Горячая клавиша: P
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if GameProcessed then return end
+    if Input.KeyCode == Enum.KeyCode.P then
+        ToggleBtn.MouseButton1Click:Connect()
     end
 end)
 
@@ -323,4 +357,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-print("✅ Платформа-невидимка загружена!")
+print("✅ Платформа загружена! Нажми P для включения.")
