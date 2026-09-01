@@ -1,17 +1,14 @@
--- [[ Steal a Brainrot - Ноклип (Безопасный обход античита) ]]
--- Работает через мягкое проталкивание сквозь стены
+-- [[ Steal a Brainrot - Ноклип через BodyVelocity (обход античита) ]]
+-- Работает через физическое "вдавливание" в стены
 
 local Player = game.Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
-local RootPart = Character:WaitForChild("HumanoidRootPart")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local NoclipEnabled = false
-local BodyVelocity = nil
-local LoopConnection = nil
 local Minimized = false
+local BodyVelocity = nil
+local BodyGyro = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -114,7 +111,7 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- ===== ФУНКЦИЯ БЕЗОПАСНОГО НОКЛИПА =====
+-- ===== ФУНКЦИЯ НОКЛИПА ЧЕРЕЗ BODYVELOCITY =====
 
 local function EnableNoclip()
     NoclipEnabled = true
@@ -123,20 +120,46 @@ local function EnableNoclip()
     StatusLabel.Text = "✅ Noclip ВКЛЮЧЁН"
     StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
     
-    -- Отключаем все коллизии на время
-    for _, Part in pairs(Character:GetDescendants()) do
-        if Part:IsA("BasePart") then
-            Part.CanCollide = false
-        end
+    local Character = Player.Character
+    if not Character then return end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return end
+    
+    -- Создаём BodyVelocity для постоянного движения вперёд
+    BodyVelocity = Instance.new("BodyVelocity")
+    BodyVelocity.MaxForce = Vector3.new(4000, 0, 4000)
+    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    BodyVelocity.Parent = RootPart
+    
+    -- Создаём BodyGyro для стабилизации (чтобы не переворачивало)
+    BodyGyro = Instance.new("BodyGyro")
+    BodyGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
+    BodyGyro.CFrame = RootPart.CFrame
+    BodyGyro.Parent = RootPart
+    
+    -- Отключаем гравитацию для лучшего прохождения
+    local Humanoid = Character:FindFirstChild("Humanoid")
+    if Humanoid then
+        Humanoid.PlatformStand = true
     end
     
-    -- Основной цикл, обходящий античит через постоянное принудительное движение
-    if LoopConnection then LoopConnection:Disconnect() end
-    LoopConnection = RunService.Stepped:Connect(function()
-        if NoclipEnabled and Character and RootPart then
-            -- Принудительно перемещаем RootPart немного вперёд, чтобы "продавить" стены
-            local MoveDirection = RootPart.CFrame.LookVector * 0.5
-            RootPart.CFrame = RootPart.CFrame + MoveDirection
+    -- Запускаем цикл для направления движения (взгляд игрока)
+    RunService.Heartbeat:Connect(function()
+        if not NoclipEnabled or not RootPart then return end
+        
+        -- Двигаемся в направлении взгляда (камера)
+        local Camera = workspace.CurrentCamera
+        if Camera then
+            local LookDirection = Camera.CFrame.LookVector
+            -- Применяем скорость в направлении взгляда (по горизонтали)
+            local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
+            if BodyVelocity then
+                BodyVelocity.Velocity = HorizontalLook * 25
+            end
+            if BodyGyro then
+                BodyGyro.CFrame = CFrame.lookAt(RootPart.Position, RootPart.Position + HorizontalLook)
+            end
         end
     end)
 end
@@ -148,29 +171,28 @@ local function DisableNoclip()
     StatusLabel.Text = "⏹ Noclip ВЫКЛЮЧЁН"
     StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
     
-    if LoopConnection then
-        LoopConnection:Disconnect()
-        LoopConnection = nil
+    if BodyVelocity then
+        BodyVelocity:Destroy()
+        BodyVelocity = nil
+    end
+    if BodyGyro then
+        BodyGyro:Destroy()
+        BodyGyro = nil
     end
     
-    -- Включаем коллизии обратно
+    local Character = Player.Character
     if Character then
-        for _, Part in pairs(Character:GetDescendants()) do
-            if Part:IsA("BasePart") then
-                Part.CanCollide = true
-            end
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.PlatformStand = false
         end
     end
 end
 
 -- Следим за сменой персонажа
 Player.CharacterAdded:Connect(function(NewCharacter)
-    Character = NewCharacter
-    Humanoid = Character:WaitForChild("Humanoid")
-    RootPart = Character:WaitForChild("HumanoidRootPart")
-    
+    task.wait(0.5)
     if NoclipEnabled then
-        -- Перезапускаем ноклип, чтобы применить его к новому персонажу
         DisableNoclip()
         EnableNoclip()
     end
@@ -208,4 +230,4 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     end
 end)
 
-print("✅ Noclip (безопасный) загружен! Нажми N для включения/выключения.")
+print("✅ Noclip (BodyVelocity) загружен! Нажми N для включения/выключения.")
