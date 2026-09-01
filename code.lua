@@ -1,198 +1,211 @@
-local player = game.Players.LocalPlayer
-local userInput = game:GetService("UserInputService")
+-- [[ Steal a Brainrot - Ноклип (Безопасный обход античита) ]]
+-- Работает через мягкое проталкивание сквозь стены
 
--- Данные
-local noclipActive = false
-local minimized = false
-local noclipParts = {}
+local Player = game.Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local NoclipEnabled = false
+local BodyVelocity = nil
+local LoopConnection = nil
+local Minimized = false
 
 -- GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "NoclipMenu"
-screenGui.Parent = player:WaitForChild("PlayerGui")
-screenGui.ResetOnSpawn = false
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NoclipGUI"
+ScreenGui.Parent = Player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
 
--- Окно
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 200, 0, 100)
-mainFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-mainFrame.BackgroundTransparency = 0.1
-mainFrame.BorderSizePixel = 0
-mainFrame.ClipsDescendants = true
-mainFrame.Active = true
-mainFrame.Draggable = true
-mainFrame.Parent = screenGui
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 130)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -65)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 8)
-corner.Parent = mainFrame
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 8)
+Corner.Parent = MainFrame
 
 -- Заголовок
-local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 30)
-titleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
 
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = titleBar
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.Parent = TitleBar
 
-local titleText = Instance.new("TextLabel")
-titleText.Size = UDim2.new(0.7, 0, 1, 0)
-titleText.Position = UDim2.new(0.05, 0, 0, 0)
-titleText.Text = "🧱 NOCLIP"
-titleText.TextColor3 = Color3.fromRGB(200, 200, 220)
-titleText.TextSize = 14
-titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.BackgroundTransparency = 1
-titleText.Parent = titleBar
+local TitleText = Instance.new("TextLabel")
+TitleText.Size = UDim2.new(0.7, 0, 1, 0)
+TitleText.Position = UDim2.new(0.05, 0, 0, 0)
+TitleText.Text = "🧱 NO CLIP"
+TitleText.TextColor3 = Color3.fromRGB(200, 200, 220)
+TitleText.TextSize = 14
+TitleText.TextXAlignment = Enum.TextXAlignment.Left
+TitleText.BackgroundTransparency = 1
+TitleText.Parent = TitleBar
 
-local minBtn = Instance.new("TextButton")
-minBtn.Size = UDim2.new(0, 25, 0, 25)
-minBtn.Position = UDim2.new(0.82, 0, 0.03, 0)
-minBtn.Text = "–"
-minBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
-minBtn.TextSize = 18
-minBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-minBtn.BorderSizePixel = 0
-minBtn.Parent = titleBar
+local MinButton = Instance.new("TextButton")
+MinButton.Size = UDim2.new(0, 25, 0, 25)
+MinButton.Position = UDim2.new(0.82, 0, 0.03, 0)
+MinButton.Text = "–"
+MinButton.TextColor3 = Color3.fromRGB(200, 200, 220)
+MinButton.TextSize = 18
+MinButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+MinButton.BorderSizePixel = 0
+MinButton.Parent = TitleBar
 
-local minCorner = Instance.new("UICorner")
-minCorner.CornerRadius = UDim.new(0, 4)
-minCorner.Parent = minBtn
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 4)
+MinCorner.Parent = MinButton
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 25, 0, 25)
-closeBtn.Position = UDim2.new(0.90, 0, 0.03, 0)
-closeBtn.Text = "✕"
-closeBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
-closeBtn.TextSize = 14
-closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-closeBtn.BorderSizePixel = 0
-closeBtn.Parent = titleBar
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Position = UDim2.new(0.90, 0, 0.03, 0)
+CloseButton.Text = "✕"
+CloseButton.TextColor3 = Color3.fromRGB(200, 200, 220)
+CloseButton.TextSize = 14
+CloseButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+CloseButton.BorderSizePixel = 0
+CloseButton.Parent = TitleBar
 
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 4)
-closeCorner.Parent = closeBtn
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 4)
+CloseCorner.Parent = CloseButton
 
 -- Контент
-local content = Instance.new("Frame")
-content.Size = UDim2.new(1, 0, 1, -30)
-content.Position = UDim2.new(0, 0, 0, 30)
-content.BackgroundTransparency = 1
-content.Parent = mainFrame
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, 0, 1, -30)
+Content.Position = UDim2.new(0, 0, 0, 30)
+Content.BackgroundTransparency = 1
+Content.Parent = MainFrame
 
--- Кнопка включения
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.8, 0, 0, 35)
-toggleBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
-toggleBtn.Text = "ВЫКЛ"
-toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-toggleBtn.TextSize = 15
-toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-toggleBtn.BorderSizePixel = 0
-toggleBtn.Parent = content
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Size = UDim2.new(0.8, 0, 0, 35)
+ToggleButton.Position = UDim2.new(0.1, 0, 0.15, 0)
+ToggleButton.Text = "ВЫКЛ"
+ToggleButton.TextColor3 = Color3.new(1, 1, 1)
+ToggleButton.TextSize = 15
+ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+ToggleButton.BorderSizePixel = 0
+ToggleButton.Parent = Content
 
-local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 6)
-toggleCorner.Parent = toggleBtn
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 6)
+ToggleCorner.Parent = ToggleButton
 
--- Статус
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0.9, 0, 0, 20)
-statusLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
-statusLabel.Text = "⏹ Выключен"
-statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-statusLabel.TextSize = 11
-statusLabel.TextXAlignment = Enum.TextXAlignment.Center
-statusLabel.BackgroundTransparency = 1
-statusLabel.Parent = content
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
+StatusLabel.Text = "⏹ Выключен"
+StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+StatusLabel.TextSize = 11
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Parent = Content
 
--- ===== ФУНКЦИЯ НОКЛИПА =====
+-- ===== ФУНКЦИЯ БЕЗОПАСНОГО НОКЛИПА =====
 
-local function enableNoclip()
-    noclipActive = true
-    local char = player.Character
-    if not char then return end
+local function EnableNoclip()
+    NoclipEnabled = true
+    ToggleButton.Text = "ВКЛ"
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+    StatusLabel.Text = "✅ Noclip ВКЛЮЧЁН"
+    StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
     
-    -- Отключаем коллизию у всех частей персонажа
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-            table.insert(noclipParts, part)
+    -- Отключаем все коллизии на время
+    for _, Part in pairs(Character:GetDescendants()) do
+        if Part:IsA("BasePart") then
+            Part.CanCollide = false
+        end
+    end
+    
+    -- Основной цикл, обходящий античит через постоянное принудительное движение
+    if LoopConnection then LoopConnection:Disconnect() end
+    LoopConnection = RunService.Stepped:Connect(function()
+        if NoclipEnabled and Character and RootPart then
+            -- Принудительно перемещаем RootPart немного вперёд, чтобы "продавить" стены
+            local MoveDirection = RootPart.CFrame.LookVector * 0.5
+            RootPart.CFrame = RootPart.CFrame + MoveDirection
+        end
+    end)
+end
+
+local function DisableNoclip()
+    NoclipEnabled = false
+    ToggleButton.Text = "ВЫКЛ"
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    StatusLabel.Text = "⏹ Noclip ВЫКЛЮЧЁН"
+    StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+    
+    if LoopConnection then
+        LoopConnection:Disconnect()
+        LoopConnection = nil
+    end
+    
+    -- Включаем коллизии обратно
+    if Character then
+        for _, Part in pairs(Character:GetDescendants()) do
+            if Part:IsA("BasePart") then
+                Part.CanCollide = true
+            end
         end
     end
 end
 
-local function disableNoclip()
-    noclipActive = false
-    local char = player.Character
-    if not char then
-        noclipParts = {}
-        return
-    end
+-- Следим за сменой персонажа
+Player.CharacterAdded:Connect(function(NewCharacter)
+    Character = NewCharacter
+    Humanoid = Character:WaitForChild("Humanoid")
+    RootPart = Character:WaitForChild("HumanoidRootPart")
     
-    -- Включаем коллизию обратно
-    for _, part in pairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = true
-        end
-    end
-    noclipParts = {}
-end
-
--- Следим за появлением новых частей (одежда, аксессуары)
-player.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid")
-    task.wait(0.1)
-    if noclipActive then
-        enableNoclip()
+    if NoclipEnabled then
+        -- Перезапускаем ноклип, чтобы применить его к новому персонажу
+        DisableNoclip()
+        EnableNoclip()
     end
 end)
 
 -- ===== КНОПКИ =====
 
-toggleBtn.MouseButton1Click:Connect(function()
-    noclipActive = not noclipActive
-    
-    if noclipActive then
-        toggleBtn.Text = "ВКЛ"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
-        statusLabel.Text = "✅ Noclip ВКЛЮЧЁН"
-        statusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
-        enableNoclip()
+ToggleButton.MouseButton1Click:Connect(function()
+    if NoclipEnabled then
+        DisableNoclip()
     else
-        toggleBtn.Text = "ВЫКЛ"
-        toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        statusLabel.Text = "⏹ Noclip ВЫКЛЮЧЁН"
-        statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-        disableNoclip()
+        EnableNoclip()
     end
 end)
 
--- Управление окном
-minBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    minBtn.Text = minimized and "+" or "–"
-    mainFrame.Size = minimized and UDim2.new(0, 200, 0, 30) or UDim2.new(0, 200, 0, 100)
+MinButton.MouseButton1Click:Connect(function()
+    Minimized = not Minimized
+    Content.Visible = not Minimized
+    MinButton.Text = Minimized and "+" or "–"
+    MainFrame.Size = Minimized and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 130)
 end)
 
-closeBtn.MouseButton1Click:Connect(function()
-    if noclipActive then
-        disableNoclip()
+CloseButton.MouseButton1Click:Connect(function()
+    if NoclipEnabled then
+        DisableNoclip()
     end
-    screenGui:Destroy()
+    ScreenGui:Destroy()
 end)
 
--- Горячая клавиша: N (включить/выключить)
-userInput.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.N then
-        toggleBtn.MouseButton1Click:Connect()
+-- Горячая клавиша: N
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if GameProcessed then return end
+    if Input.KeyCode == Enum.KeyCode.N then
+        ToggleButton.MouseButton1Click:Connect()
     end
 end)
 
-print("✅ Noclip меню загружено! Нажми N для включения/выключения.")
+print("✅ Noclip (безопасный) загружен! Нажми N для включения/выключения.")
