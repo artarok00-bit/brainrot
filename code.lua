@@ -1,5 +1,5 @@
--- [[ Steal an Egg - Защита яйца ]]
--- Блокирует урон и рагдол, пока игрок несёт яйцо
+-- [[ Steal an Egg - Анти-рагдол (полная блокировка) ]]
+-- Игрок НИКОГДА не входит в рагдол, даже при ударе
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
@@ -8,17 +8,16 @@ local UserInputService = game:GetService("UserInputService")
 local IsActive = false
 local Minimized = false
 local CheckConnection = nil
-local OldDamage = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "EggProtectGUI"
+ScreenGui.Name = "AntiRagdollGUI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 240, 0, 140)
-MainFrame.Position = UDim2.new(0.5, -120, 0.5, -70)
+MainFrame.Size = UDim2.new(0, 240, 0, 130)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -65)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
@@ -45,7 +44,7 @@ TitleCorner.Parent = TitleBar
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-TitleText.Text = "🥚 ЗАЩИТА ЯЙЦА"
+TitleText.Text = "💪 АНТИ-РАГДОЛ"
 TitleText.TextColor3 = Color3.fromRGB(200, 200, 220)
 TitleText.TextSize = 14
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -111,85 +110,49 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- ===== ПРОВЕРКА НАЛИЧИЯ ЯЙЦА =====
+-- ===== ФУНКЦИЯ ПОЛНОЙ БЛОКИРОВКИ РАГДОЛА =====
 
-local function HasEgg()
-    local Character = Player.Character
-    if not Character then return false end
-    
-    -- Проверяем в инвентаре (Backpack)
-    local Backpack = Player:FindFirstChild("Backpack")
-    if Backpack then
-        for _, item in pairs(Backpack:GetChildren()) do
-            if item:IsA("Tool") and string.find(string.lower(item.Name), "egg") then
-                return true
-            end
-        end
-    end
-    
-    -- Проверяем в руках
-    if Character:FindFirstChild("Humanoid") then
-        local Humanoid = Character.Humanoid
-        if Humanoid:FindFirstChild("ActiveController") then
-            local Tool = Humanoid.ActiveController:FindFirstChild("ActiveTool")
-            if Tool and string.find(string.lower(Tool.Name), "egg") then
-                return true
-            end
-        end
-    end
-    
-    -- Проверяем в Character
-    for _, child in pairs(Character:GetChildren()) do
-        if child:IsA("Tool") and string.find(string.lower(child.Name), "egg") then
-            return true
-        end
-    end
-    
-    -- Проверяем переменные в игроке (если игра использует BoolValue)
-    if Player:FindFirstChild("HasEgg") and Player.HasEgg.Value == true then
-        return true
-    end
-    
-    return false
-end
-
--- ===== АНТИ-УРОН =====
-
-local function ProtectFromDamage()
+local function PreventRagdoll()
     local Character = Player.Character
     if not Character then return end
     
     local Humanoid = Character:FindFirstChild("Humanoid")
     if not Humanoid then return end
     
-    -- Если есть яйцо
-    if HasEgg() then
-        -- Блокируем урон
-        if Humanoid.Health < 100 then
-            Humanoid.Health = 100
-        end
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return end
+    
+    -- Если включён режим "Physics" (рагдол) — моментально выходим
+    if Humanoid:GetState() == Enum.HumanoidStateType.Physics then
+        -- Отключаем Physics
+        Humanoid.PlatformStand = true
+        task.wait(0.01)
+        Humanoid.PlatformStand = false
         
-        -- Защита от рагдола
-        if Humanoid:GetState() == Enum.HumanoidStateType.Physics then
-            Humanoid.PlatformStand = true
-            task.wait(0.05)
-            Humanoid.PlatformStand = false
-            Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        end
+        -- Возвращаем в Running
+        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
         
-        -- Сбрасываем физику
+        -- Сбрасываем скорость у всех частей
         for _, part in pairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") and part ~= Character:FindFirstChild("HumanoidRootPart") then
+            if part:IsA("BasePart") then
                 part.Velocity = Vector3.new(0, 0, 0)
                 part.RotVelocity = Vector3.new(0, 0, 0)
             end
         end
         
-        local RootPart = Character:FindFirstChild("HumanoidRootPart")
-        if RootPart then
-            RootPart.Velocity = Vector3.new(0, 0, 0)
-            RootPart.RotVelocity = Vector3.new(0, 0, 0)
+        -- Восстанавливаем позицию
+        local CurrentPos = RootPart.Position
+        RootPart.CFrame = CFrame.new(CurrentPos.X, CurrentPos.Y + 2, CurrentPos.Z)
+        
+        -- Восстанавливаем здоровье (если упало)
+        if Humanoid.Health < 90 then
+            Humanoid.Health = 100
         end
+    end
+    
+    -- Дополнительная защита: при любом ударе или падении
+    if Humanoid.Health < 90 then
+        Humanoid.Health = 100
     end
 end
 
@@ -208,9 +171,10 @@ local function Enable()
         CheckConnection:Disconnect()
     end
     
+    -- Проверка каждый кадр
     CheckConnection = RunService.Heartbeat:Connect(function()
         if IsActive then
-            ProtectFromDamage()
+            PreventRagdoll()
         end
     end)
 end
@@ -242,11 +206,20 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Горячая клавиша: E
+-- Горячая клавиша: R
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if GameProcessed then return end
-    if Input.KeyCode == Enum.KeyCode.E then
+    if Input.KeyCode == Enum.KeyCode.R then
         ToggleBtn.MouseButton1Click:Connect()
+    end
+end)
+
+-- Перезапуск при смене персонажа
+Player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if IsActive then
+        Disable()
+        Enable()
     end
 end)
 
@@ -255,7 +228,7 @@ MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 30) or UDim2.new(0, 240, 0, 140)
+    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 30) or UDim2.new(0, 240, 0, 130)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -263,4 +236,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-print("✅ Защита яйца загружена! Нажми E для включения/выключения.")
+print("✅ Анти-рагдол (полная блокировка) загружен! Нажми R.")
