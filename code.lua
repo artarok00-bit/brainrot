@@ -1,22 +1,21 @@
--- Скрипт для Steal a Brainrot: Меню скорости
 local player = game.Players.LocalPlayer
 local userInput = game:GetService("UserInputService")
 
--- Переменные
-local speedEnabled = false
-local currentSpeed = 16
+-- Данные
+local noclipActive = false
 local minimized = false
+local noclipParts = {}
 
--- Создаем GUI
+-- GUI
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SpeedMenu"
+screenGui.Name = "NoclipMenu"
 screenGui.Parent = player:WaitForChild("PlayerGui")
 screenGui.ResetOnSpawn = false
 
--- Основное окно
+-- Окно
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 130)
-mainFrame.Position = UDim2.new(0.5, -110, 0.5, -65)
+mainFrame.Size = UDim2.new(0, 200, 0, 100)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
 mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
@@ -43,14 +42,13 @@ titleCorner.Parent = titleBar
 local titleText = Instance.new("TextLabel")
 titleText.Size = UDim2.new(0.7, 0, 1, 0)
 titleText.Position = UDim2.new(0.05, 0, 0, 0)
-titleText.Text = "⚡ SPEED"
+titleText.Text = "🧱 NOCLIP"
 titleText.TextColor3 = Color3.fromRGB(200, 200, 220)
 titleText.TextSize = 14
 titleText.TextXAlignment = Enum.TextXAlignment.Left
 titleText.BackgroundTransparency = 1
 titleText.Parent = titleBar
 
--- Кнопка свернуть
 local minBtn = Instance.new("TextButton")
 minBtn.Size = UDim2.new(0, 25, 0, 25)
 minBtn.Position = UDim2.new(0.82, 0, 0.03, 0)
@@ -65,7 +63,6 @@ local minCorner = Instance.new("UICorner")
 minCorner.CornerRadius = UDim.new(0, 4)
 minCorner.Parent = minBtn
 
--- Кнопка закрыть
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 25, 0, 25)
 closeBtn.Position = UDim2.new(0.90, 0, 0.03, 0)
@@ -87,113 +84,92 @@ content.Position = UDim2.new(0, 0, 0, 30)
 content.BackgroundTransparency = 1
 content.Parent = mainFrame
 
--- Поле скорости
-local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(0.5, 0, 0, 20)
-speedLabel.Position = UDim2.new(0.05, 0, 0.05, 0)
-speedLabel.Text = "СКОРОСТЬ"
-speedLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-speedLabel.TextSize = 11
-speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-speedLabel.BackgroundTransparency = 1
-speedLabel.Parent = content
-
-local speedBox = Instance.new("TextBox")
-speedBox.Size = UDim2.new(0.4, 0, 0, 28)
-speedBox.Position = UDim2.new(0.05, 0, 0.2, 0)
-speedBox.Text = "16"
-speedBox.TextColor3 = Color3.fromRGB(220, 220, 240)
-speedBox.TextSize = 14
-speedBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-speedBox.BorderSizePixel = 0
-speedBox.Parent = content
-
-local speedCorner = Instance.new("UICorner")
-speedCorner.CornerRadius = UDim.new(0, 4)
-speedCorner.Parent = speedBox
-
 -- Кнопка включения
 local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.4, 0, 0, 28)
-toggleBtn.Position = UDim2.new(0.55, 0, 0.2, 0)
+toggleBtn.Size = UDim2.new(0.8, 0, 0, 35)
+toggleBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
 toggleBtn.Text = "ВЫКЛ"
 toggleBtn.TextColor3 = Color3.new(1, 1, 1)
-toggleBtn.TextSize = 13
+toggleBtn.TextSize = 15
 toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 toggleBtn.BorderSizePixel = 0
 toggleBtn.Parent = content
 
 local toggleCorner = Instance.new("UICorner")
-toggleCorner.CornerRadius = UDim.new(0, 4)
+toggleCorner.CornerRadius = UDim.new(0, 6)
 toggleCorner.Parent = toggleBtn
 
 -- Статус
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0.9, 0, 0, 20)
-statusLabel.Position = UDim2.new(0.05, 0, 0.6, 0)
-statusLabel.Text = "⏹ Остановлен"
+statusLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
+statusLabel.Text = "⏹ Выключен"
 statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
 statusLabel.TextSize = 11
 statusLabel.TextXAlignment = Enum.TextXAlignment.Center
 statusLabel.BackgroundTransparency = 1
 statusLabel.Parent = content
 
--- ===== ФУНКЦИИ =====
+-- ===== ФУНКЦИЯ НОКЛИПА =====
 
-local function applySpeed()
+local function enableNoclip()
+    noclipActive = true
     local char = player.Character
     if not char then return end
-    local humanoid = char:FindFirstChild("Humanoid")
-    if not humanoid then return end
     
-    if speedEnabled then
-        humanoid.WalkSpeed = currentSpeed
-    else
-        humanoid.WalkSpeed = 16
+    -- Отключаем коллизию у всех частей персонажа
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+            table.insert(noclipParts, part)
+        end
     end
 end
 
--- Обновление скорости при изменении персонажа
+local function disableNoclip()
+    noclipActive = false
+    local char = player.Character
+    if not char then
+        noclipParts = {}
+        return
+    end
+    
+    -- Включаем коллизию обратно
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+    noclipParts = {}
+end
+
+-- Следим за появлением новых частей (одежда, аксессуары)
 player.CharacterAdded:Connect(function(char)
     char:WaitForChild("Humanoid")
     task.wait(0.1)
-    applySpeed()
+    if noclipActive then
+        enableNoclip()
+    end
 end)
 
 -- ===== КНОПКИ =====
 
--- Обновление скорости из поля
-speedBox.FocusLost:Connect(function()
-    local val = tonumber(speedBox.Text)
-    if val and val > 0 then
-        currentSpeed = val
-        if speedEnabled then
-            applySpeed()
-        end
-        statusLabel.Text = "⚡ Скорость: " .. currentSpeed
-        statusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
-    else
-        speedBox.Text = tostring(currentSpeed)
-    end
-end)
-
--- Включение/выключение
 toggleBtn.MouseButton1Click:Connect(function()
-    speedEnabled = not speedEnabled
+    noclipActive = not noclipActive
     
-    if speedEnabled then
+    if noclipActive then
         toggleBtn.Text = "ВКЛ"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
-        statusLabel.Text = "✅ Скорость: " .. currentSpeed
+        statusLabel.Text = "✅ Noclip ВКЛЮЧЁН"
         statusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+        enableNoclip()
     else
         toggleBtn.Text = "ВЫКЛ"
         toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-        statusLabel.Text = "⏹ Остановлен"
+        statusLabel.Text = "⏹ Noclip ВЫКЛЮЧЁН"
         statusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+        disableNoclip()
     end
-    
-    applySpeed()
 end)
 
 -- Управление окном
@@ -201,16 +177,22 @@ minBtn.MouseButton1Click:Connect(function()
     minimized = not minimized
     content.Visible = not minimized
     minBtn.Text = minimized and "+" or "–"
-    mainFrame.Size = minimized and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 130)
+    mainFrame.Size = minimized and UDim2.new(0, 200, 0, 30) or UDim2.new(0, 200, 0, 100)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-    -- Отключаем скорость при закрытии
-    if speedEnabled then
-        speedEnabled = false
-        applySpeed()
+    if noclipActive then
+        disableNoclip()
     end
     screenGui:Destroy()
 end)
 
-print("✅ Speed Menu загружен для Steal a Brainrot")
+-- Горячая клавиша: N (включить/выключить)
+userInput.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.N then
+        toggleBtn.MouseButton1Click:Connect()
+    end
+end)
+
+print("✅ Noclip меню загружено! Нажми N для включения/выключения.")
