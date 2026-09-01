@@ -1,24 +1,25 @@
--- [[ Steal a Brainrot - Ноклип через BodyVelocity (обход античита) ]]
--- Работает через физическое "вдавливание" в стены
+-- [[ Платформа-невидимка с подъёмом ]]
+-- Создаёт платформу под игроком, поднимает на высоту, двигается за ним
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local NoclipEnabled = false
+local Platform = nil
+local IsActive = false
+local TargetHeight = 10
+local MoveSpeed = 50
 local Minimized = false
-local BodyVelocity = nil
-local BodyGyro = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NoclipGUI"
+ScreenGui.Name = "PlatformGUI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 220, 0, 130)
-MainFrame.Position = UDim2.new(0.5, -110, 0.5, -65)
+MainFrame.Size = UDim2.new(0, 260, 0, 180)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -90)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
@@ -28,7 +29,7 @@ MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 8)
+Corner.CornerRadius = UDim.new(0, 10)
 Corner.Parent = MainFrame
 
 -- Заголовок
@@ -39,46 +40,46 @@ TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.CornerRadius = UDim.new(0, 10)
 TitleCorner.Parent = TitleBar
 
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-TitleText.Text = "🧱 NO CLIP"
+TitleText.Text = "🪄 ПЛАТФОРМА"
 TitleText.TextColor3 = Color3.fromRGB(200, 200, 220)
 TitleText.TextSize = 14
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.BackgroundTransparency = 1
 TitleText.Parent = TitleBar
 
-local MinButton = Instance.new("TextButton")
-MinButton.Size = UDim2.new(0, 25, 0, 25)
-MinButton.Position = UDim2.new(0.82, 0, 0.03, 0)
-MinButton.Text = "–"
-MinButton.TextColor3 = Color3.fromRGB(200, 200, 220)
-MinButton.TextSize = 18
-MinButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-MinButton.BorderSizePixel = 0
-MinButton.Parent = TitleBar
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 25, 0, 25)
+MinBtn.Position = UDim2.new(0.82, 0, 0.03, 0)
+MinBtn.Text = "–"
+MinBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
+MinBtn.TextSize = 18
+MinBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+MinBtn.BorderSizePixel = 0
+MinBtn.Parent = TitleBar
 
 local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 4)
-MinCorner.Parent = MinButton
+MinCorner.Parent = MinBtn
 
-local CloseButton = Instance.new("TextButton")
-CloseButton.Size = UDim2.new(0, 25, 0, 25)
-CloseButton.Position = UDim2.new(0.90, 0, 0.03, 0)
-CloseButton.Text = "✕"
-CloseButton.TextColor3 = Color3.fromRGB(200, 200, 220)
-CloseButton.TextSize = 14
-CloseButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-CloseButton.BorderSizePixel = 0
-CloseButton.Parent = TitleBar
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(0.90, 0, 0.03, 0)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
+CloseBtn.TextSize = 14
+CloseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+CloseBtn.BorderSizePixel = 0
+CloseBtn.Parent = TitleBar
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 4)
-CloseCorner.Parent = CloseButton
+CloseCorner.Parent = CloseBtn
 
 -- Контент
 local Content = Instance.new("Frame")
@@ -87,38 +88,89 @@ Content.Position = UDim2.new(0, 0, 0, 30)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
-local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0.8, 0, 0, 35)
-ToggleButton.Position = UDim2.new(0.1, 0, 0.15, 0)
-ToggleButton.Text = "ВЫКЛ"
-ToggleButton.TextColor3 = Color3.new(1, 1, 1)
-ToggleButton.TextSize = 15
-ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-ToggleButton.BorderSizePixel = 0
-ToggleButton.Parent = Content
+-- Кнопка вкл/выкл
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0.8, 0, 0, 32)
+ToggleBtn.Position = UDim2.new(0.1, 0, 0.05, 0)
+ToggleBtn.Text = "ВКЛ"
+ToggleBtn.TextColor3 = Color3.new(1, 1, 1)
+ToggleBtn.TextSize = 14
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+ToggleBtn.BorderSizePixel = 0
+ToggleBtn.Parent = Content
 
 local ToggleCorner = Instance.new("UICorner")
 ToggleCorner.CornerRadius = UDim.new(0, 6)
-ToggleCorner.Parent = ToggleButton
+ToggleCorner.Parent = ToggleBtn
 
+-- Высота
+local HeightLabel = Instance.new("TextLabel")
+HeightLabel.Size = UDim2.new(0.4, 0, 0, 18)
+HeightLabel.Position = UDim2.new(0.05, 0, 0.28, 0)
+HeightLabel.Text = "ВЫСОТА"
+HeightLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+HeightLabel.TextSize = 11
+HeightLabel.TextXAlignment = Enum.TextXAlignment.Left
+HeightLabel.BackgroundTransparency = 1
+HeightLabel.Parent = Content
+
+local HeightInput = Instance.new("TextBox")
+HeightInput.Size = UDim2.new(0.35, 0, 0, 26)
+HeightInput.Position = UDim2.new(0.05, 0, 0.37, 0)
+HeightInput.Text = "10"
+HeightInput.TextColor3 = Color3.fromRGB(220, 220, 240)
+HeightInput.TextSize = 14
+HeightInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+HeightInput.BorderSizePixel = 0
+HeightInput.Parent = Content
+
+local HeightCorner = Instance.new("UICorner")
+HeightCorner.CornerRadius = UDim.new(0, 4)
+HeightCorner.Parent = HeightInput
+
+-- Скорость
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.4, 0, 0, 18)
+SpeedLabel.Position = UDim2.new(0.55, 0, 0.28, 0)
+SpeedLabel.Text = "СКОРОСТЬ"
+SpeedLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+SpeedLabel.TextSize = 11
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Parent = Content
+
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Size = UDim2.new(0.35, 0, 0, 26)
+SpeedInput.Position = UDim2.new(0.55, 0, 0.37, 0)
+SpeedInput.Text = "50"
+SpeedInput.TextColor3 = Color3.fromRGB(220, 220, 240)
+SpeedInput.TextSize = 14
+SpeedInput.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+SpeedInput.BorderSizePixel = 0
+SpeedInput.Parent = Content
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 4)
+SpeedCorner.Parent = SpeedInput
+
+-- Статус
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 18)
 StatusLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
-StatusLabel.Text = "⏹ Выключен"
-StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+StatusLabel.Text = "🟢 Включена"
+StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
 StatusLabel.TextSize = 11
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- ===== ФУНКЦИЯ НОКЛИПА ЧЕРЕЗ BODYVELOCITY =====
+-- ===== СОЗДАНИЕ ПЛАТФОРМЫ =====
 
-local function EnableNoclip()
-    NoclipEnabled = true
-    ToggleButton.Text = "ВКЛ"
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
-    StatusLabel.Text = "✅ Noclip ВКЛЮЧЁН"
-    StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+local function CreatePlatform()
+    if Platform then
+        Platform:Destroy()
+        Platform = nil
+    end
     
     local Character = Player.Character
     if not Character then return end
@@ -126,58 +178,85 @@ local function EnableNoclip()
     local RootPart = Character:FindFirstChild("HumanoidRootPart")
     if not RootPart then return end
     
-    -- Создаём BodyVelocity для постоянного движения вперёд
-    BodyVelocity = Instance.new("BodyVelocity")
-    BodyVelocity.MaxForce = Vector3.new(4000, 0, 4000)
-    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    BodyVelocity.Parent = RootPart
+    -- Невидимая платформа
+    Platform = Instance.new("Part")
+    Platform.Name = "PlayerPlatform"
+    Platform.Size = Vector3.new(6, 0.5, 6)
+    Platform.CFrame = RootPart.CFrame - Vector3.new(0, TargetHeight, 0)
+    Platform.Anchored = true
+    Platform.CanCollide = true
+    Platform.Transparency = 1
+    Platform.Material = Enum.Material.Plastic
+    Platform.Parent = workspace
     
-    -- Создаём BodyGyro для стабилизации (чтобы не переворачивало)
-    BodyGyro = Instance.new("BodyGyro")
-    BodyGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
-    BodyGyro.CFrame = RootPart.CFrame
-    BodyGyro.Parent = RootPart
-    
-    -- Отключаем гравитацию для лучшего прохождения
-    local Humanoid = Character:FindFirstChild("Humanoid")
-    if Humanoid then
-        Humanoid.PlatformStand = true
-    end
-    
-    -- Запускаем цикл для направления движения (взгляд игрока)
-    RunService.Heartbeat:Connect(function()
-        if not NoclipEnabled or not RootPart then return end
-        
-        -- Двигаемся в направлении взгляда (камера)
-        local Camera = workspace.CurrentCamera
-        if Camera then
-            local LookDirection = Camera.CFrame.LookVector
-            -- Применяем скорость в направлении взгляда (по горизонтали)
-            local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
-            if BodyVelocity then
-                BodyVelocity.Velocity = HorizontalLook * 25
-            end
-            if BodyGyro then
-                BodyGyro.CFrame = CFrame.lookAt(RootPart.Position, RootPart.Position + HorizontalLook)
-            end
-        end
-    end)
+    -- Делаем невидимой для других (опционально)
+    Platform.LocalTransparencyModifier = 1
 end
 
-local function DisableNoclip()
-    NoclipEnabled = false
-    ToggleButton.Text = "ВЫКЛ"
-    ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    StatusLabel.Text = "⏹ Noclip ВЫКЛЮЧЁН"
-    StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
+-- ===== ОБНОВЛЕНИЕ ПОЗИЦИИ ПЛАТФОРМЫ =====
+
+local function UpdatePlatform()
+    if not IsActive or not Platform then return end
     
-    if BodyVelocity then
-        BodyVelocity:Destroy()
-        BodyVelocity = nil
+    local Character = Player.Character
+    if not Character then return end
+    
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return end
+    
+    -- Высота над платформой
+    local TargetPos = RootPart.Position - Vector3.new(0, TargetHeight, 0)
+    
+    -- Плавное движение к игроку
+    local CurrentPos = Platform.Position
+    local NewPos = CurrentPos:Lerp(TargetPos, MoveSpeed / 100)
+    
+    Platform.CFrame = CFrame.new(NewPos)
+end
+
+-- ===== ВКЛЮЧЕНИЕ/ВЫКЛЮЧЕНИЕ =====
+
+local function Enable()
+    if IsActive then return end
+    IsActive = true
+    
+    ToggleBtn.Text = "ВЫКЛ"
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    StatusLabel.Text = "🟢 Включена"
+    StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
+    
+    CreatePlatform()
+    
+    -- Запускаем обновление позиции
+    RunService.Heartbeat:Connect(function()
+        if IsActive then
+            UpdatePlatform()
+        end
+    end)
+    
+    -- Поднимаем персонажа
+    local Character = Player.Character
+    if Character then
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.PlatformStand = true
+            Humanoid:ChangeState(Enum.HumanoidStateType.FallingDown)
+        end
     end
-    if BodyGyro then
-        BodyGyro:Destroy()
-        BodyGyro = nil
+end
+
+local function Disable()
+    if not IsActive then return end
+    IsActive = false
+    
+    ToggleBtn.Text = "ВКЛ"
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+    StatusLabel.Text = "🔴 Выключена"
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
+    
+    if Platform then
+        Platform:Destroy()
+        Platform = nil
     end
     
     local Character = Player.Character
@@ -189,45 +268,59 @@ local function DisableNoclip()
     end
 end
 
--- Следим за сменой персонажа
-Player.CharacterAdded:Connect(function(NewCharacter)
-    task.wait(0.5)
-    if NoclipEnabled then
-        DisableNoclip()
-        EnableNoclip()
+-- ===== ОБНОВЛЕНИЕ ПАРАМЕТРОВ =====
+
+HeightInput.FocusLost:Connect(function()
+    local val = tonumber(HeightInput.Text)
+    if val and val > 0 then
+        TargetHeight = val
+        if IsActive then
+            CreatePlatform()
+        end
+    else
+        HeightInput.Text = tostring(TargetHeight)
+    end
+end)
+
+SpeedInput.FocusLost:Connect(function()
+    local val = tonumber(SpeedInput.Text)
+    if val and val > 0 then
+        MoveSpeed = math.min(val, 100)
+        SpeedInput.Text = tostring(MoveSpeed)
+    else
+        SpeedInput.Text = tostring(MoveSpeed)
     end
 end)
 
 -- ===== КНОПКИ =====
 
-ToggleButton.MouseButton1Click:Connect(function()
-    if NoclipEnabled then
-        DisableNoclip()
+ToggleBtn.MouseButton1Click:Connect(function()
+    if IsActive then
+        Disable()
     else
-        EnableNoclip()
+        Enable()
     end
 end)
 
-MinButton.MouseButton1Click:Connect(function()
+-- Пересоздание платформы при смене персонажа
+Player.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if IsActive then
+        CreatePlatform()
+    end
+end)
+
+-- Управление окном
+MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
-    MinButton.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 220, 0, 30) or UDim2.new(0, 220, 0, 130)
+    MinBtn.Text = Minimized and "+" or "–"
+    MainFrame.Size = Minimized and UDim2.new(0, 260, 0, 30) or UDim2.new(0, 260, 0, 180)
 end)
 
-CloseButton.MouseButton1Click:Connect(function()
-    if NoclipEnabled then
-        DisableNoclip()
-    end
+CloseBtn.MouseButton1Click:Connect(function()
+    Disable()
     ScreenGui:Destroy()
 end)
 
--- Горячая клавиша: N
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
-    if GameProcessed then return end
-    if Input.KeyCode == Enum.KeyCode.N then
-        ToggleButton.MouseButton1Click:Connect()
-    end
-end)
-
-print("✅ Noclip (BodyVelocity) загружен! Нажми N для включения/выключения.")
+print("✅ Платформа-невидимка загружена!")
