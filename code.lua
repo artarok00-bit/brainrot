@@ -22,8 +22,8 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 280, 0, 280)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -140)
+MainFrame.Size = UDim2.new(0, 280, 0, 330)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -165)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
@@ -94,8 +94,8 @@ Content.Parent = MainFrame
 
 -- Кнопка "+" (добавить точку)
 local AddBtn = Instance.new("TextButton")
-AddBtn.Size = UDim2.new(0.85, 0, 0, 42)
-AddBtn.Position = UDim2.new(0.075, 0, 0.04, 0)
+AddBtn.Size = UDim2.new(0.85, 0, 0, 40)
+AddBtn.Position = UDim2.new(0.075, 0, 0.03, 0)
 AddBtn.Text = "➕ ДОБАВИТЬ ТОЧКУ"
 AddBtn.TextColor3 = Color3.new(1, 1, 1)
 AddBtn.TextSize = 15
@@ -110,7 +110,7 @@ AddCorner.Parent = AddBtn
 -- Кнопка "Сбросить точки"
 local ClearBtn = Instance.new("TextButton")
 ClearBtn.Size = UDim2.new(0.42, 0, 0, 32)
-ClearBtn.Position = UDim2.new(0.075, 0, 0.22, 0)
+ClearBtn.Position = UDim2.new(0.075, 0, 0.2, 0)
 ClearBtn.Text = "🗑 СБРОСИТЬ"
 ClearBtn.TextColor3 = Color3.new(1, 1, 1)
 ClearBtn.TextSize = 13
@@ -125,7 +125,7 @@ ClearCorner.Parent = ClearBtn
 -- Количество точек
 local PointsLabel = Instance.new("TextLabel")
 PointsLabel.Size = UDim2.new(0.42, 0, 0, 32)
-PointsLabel.Position = UDim2.new(0.51, 0, 0.22, 0)
+PointsLabel.Position = UDim2.new(0.51, 0, 0.2, 0)
 PointsLabel.Text = "📍 0"
 PointsLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
 PointsLabel.TextSize = 18
@@ -136,7 +136,7 @@ PointsLabel.Parent = Content
 -- Ползунок скорости
 local SpeedLabel = Instance.new("TextLabel")
 SpeedLabel.Size = UDim2.new(0.4, 0, 0, 20)
-SpeedLabel.Position = UDim2.new(0.075, 0, 0.37, 0)
+SpeedLabel.Position = UDim2.new(0.075, 0, 0.35, 0)
 SpeedLabel.Text = "🚀 СКОРОСТЬ"
 SpeedLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
 SpeedLabel.TextSize = 12
@@ -146,7 +146,7 @@ SpeedLabel.Parent = Content
 
 local SpeedSlider = Instance.new("ScrollingFrame")
 SpeedSlider.Size = UDim2.new(0.55, 0, 0, 22)
-SpeedSlider.Position = UDim2.new(0.075, 0, 0.45, 0)
+SpeedSlider.Position = UDim2.new(0.075, 0, 0.43, 0)
 SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 SpeedSlider.BorderSizePixel = 0
 SpeedSlider.ScrollBarThickness = 10
@@ -159,7 +159,7 @@ SpeedCorner.Parent = SpeedSlider
 
 local SpeedValue = Instance.new("TextLabel")
 SpeedValue.Size = UDim2.new(0.2, 0, 0, 22)
-SpeedValue.Position = UDim2.new(0.75, 0, 0.45, 0)
+SpeedValue.Position = UDim2.new(0.75, 0, 0.43, 0)
 SpeedValue.Text = "50"
 SpeedValue.TextColor3 = Color3.fromRGB(220, 220, 240)
 SpeedValue.TextSize = 16
@@ -167,7 +167,7 @@ SpeedValue.TextXAlignment = Enum.TextXAlignment.Right
 SpeedValue.BackgroundTransparency = 1
 SpeedValue.Parent = Content
 
--- Ползунок (реализация через скролл)
+-- Ползунок
 local function UpdateSpeed()
     local percent = SpeedSlider.CanvasPosition.Y / 100
     Speed = math.floor(percent * 500)
@@ -178,11 +178,11 @@ end
 SpeedSlider:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateSpeed)
 SpeedSlider.MouseButton1Down:Connect(UpdateSpeed)
 
--- ===== КНОПКИ СТАРТ И СТОП (БОЛЬШИЕ) =====
+-- ===== КНОПКИ СТАРТ И СТОП (БОЛЬШИЕ, ВИДНЫЕ) =====
 
 local StartBtn = Instance.new("TextButton")
 StartBtn.Size = UDim2.new(0.42, 0, 0, 45)
-StartBtn.Position = UDim2.new(0.075, 0, 0.6, 0)
+StartBtn.Position = UDim2.new(0.075, 0, 0.58, 0)
 StartBtn.Text = "🚀 СТАРТ"
 StartBtn.TextColor3 = Color3.new(1, 1, 1)
 StartBtn.TextSize = 18
@@ -196,7 +196,7 @@ StartCorner.Parent = StartBtn
 
 local StopBtn = Instance.new("TextButton")
 StopBtn.Size = UDim2.new(0.42, 0, 0, 45)
-StopBtn.Position = UDim2.new(0.51, 0, 0.6, 0)
+StopBtn.Position = UDim2.new(0.51, 0, 0.58, 0)
 StopBtn.Text = "⏹ СТОП"
 StopBtn.TextColor3 = Color3.new(1, 1, 1)
 StopBtn.TextSize = 18
@@ -211,7 +211,7 @@ StopCorner.Parent = StopBtn
 -- Статус
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 22)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.84, 0)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.82, 0)
 StatusLabel.Text = "🟢 Готов"
 StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
 StatusLabel.TextSize = 13
@@ -421,7 +421,7 @@ MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 280, 0, 35) or UDim2.new(0, 280, 0, 280)
+    MainFrame.Size = Minimized and UDim2.new(0, 280, 0, 35) or UDim2.new(0, 280, 0, 330)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
