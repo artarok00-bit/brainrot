@@ -22,8 +22,8 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 240, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -120, 0.5, -100)
+MainFrame.Size = UDim2.new(0, 280, 0, 280)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -140)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
@@ -33,18 +33,18 @@ MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 10)
+Corner.CornerRadius = UDim.new(0, 12)
 Corner.Parent = MainFrame
 
 -- Заголовок
 local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
 TitleBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 10)
+TitleCorner.CornerRadius = UDim.new(0, 12)
 TitleCorner.Parent = TitleBar
 
 local TitleText = Instance.new("TextLabel")
@@ -52,17 +52,17 @@ TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
 TitleText.Text = "🧭 НАВИГАТОР"
 TitleText.TextColor3 = Color3.fromRGB(200, 200, 220)
-TitleText.TextSize = 14
+TitleText.TextSize = 16
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
 TitleText.BackgroundTransparency = 1
 TitleText.Parent = TitleBar
 
 local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.new(0, 25, 0, 25)
-MinBtn.Position = UDim2.new(0.82, 0, 0.03, 0)
+MinBtn.Size = UDim2.new(0, 28, 0, 28)
+MinBtn.Position = UDim2.new(0.82, 0, 0.04, 0)
 MinBtn.Text = "–"
 MinBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
-MinBtn.TextSize = 18
+MinBtn.TextSize = 20
 MinBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 MinBtn.BorderSizePixel = 0
 MinBtn.Parent = TitleBar
@@ -72,11 +72,11 @@ MinCorner.CornerRadius = UDim.new(0, 4)
 MinCorner.Parent = MinBtn
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 25, 0, 25)
-CloseBtn.Position = UDim2.new(0.90, 0, 0.03, 0)
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(0.90, 0, 0.04, 0)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
-CloseBtn.TextSize = 14
+CloseBtn.TextSize = 16
 CloseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 CloseBtn.BorderSizePixel = 0
 CloseBtn.Parent = TitleBar
@@ -87,18 +87,18 @@ CloseCorner.Parent = CloseBtn
 
 -- Контент
 local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, 0, 1, -30)
-Content.Position = UDim2.new(0, 0, 0, 30)
+Content.Size = UDim2.new(1, 0, 1, -35)
+Content.Position = UDim2.new(0, 0, 0, 35)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
 -- Кнопка "+" (добавить точку)
 local AddBtn = Instance.new("TextButton")
-AddBtn.Size = UDim2.new(0.85, 0, 0, 40)
+AddBtn.Size = UDim2.new(0.85, 0, 0, 42)
 AddBtn.Position = UDim2.new(0.075, 0, 0.04, 0)
-AddBtn.Text = "➕ ДОБАВИТЬ ТОЧКУ (МОЯ ПОЗИЦИЯ)"
+AddBtn.Text = "➕ ДОБАВИТЬ ТОЧКУ"
 AddBtn.TextColor3 = Color3.new(1, 1, 1)
-AddBtn.TextSize = 14
+AddBtn.TextSize = 15
 AddBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
 AddBtn.BorderSizePixel = 0
 AddBtn.Parent = Content
@@ -109,8 +109,8 @@ AddCorner.Parent = AddBtn
 
 -- Кнопка "Сбросить точки"
 local ClearBtn = Instance.new("TextButton")
-ClearBtn.Size = UDim2.new(0.42, 0, 0, 30)
-ClearBtn.Position = UDim2.new(0.075, 0, 0.27, 0)
+ClearBtn.Size = UDim2.new(0.42, 0, 0, 32)
+ClearBtn.Position = UDim2.new(0.075, 0, 0.22, 0)
 ClearBtn.Text = "🗑 СБРОСИТЬ"
 ClearBtn.TextColor3 = Color3.new(1, 1, 1)
 ClearBtn.TextSize = 13
@@ -124,52 +124,51 @@ ClearCorner.Parent = ClearBtn
 
 -- Количество точек
 local PointsLabel = Instance.new("TextLabel")
-PointsLabel.Size = UDim2.new(0.42, 0, 0, 30)
-PointsLabel.Position = UDim2.new(0.51, 0, 0.27, 0)
+PointsLabel.Size = UDim2.new(0.42, 0, 0, 32)
+PointsLabel.Position = UDim2.new(0.51, 0, 0.22, 0)
 PointsLabel.Text = "📍 0"
 PointsLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
-PointsLabel.TextSize = 16
+PointsLabel.TextSize = 18
 PointsLabel.TextXAlignment = Enum.TextXAlignment.Center
 PointsLabel.BackgroundTransparency = 1
 PointsLabel.Parent = Content
 
 -- Ползунок скорости
 local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.4, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.075, 0, 0.42, 0)
+SpeedLabel.Size = UDim2.new(0.4, 0, 0, 20)
+SpeedLabel.Position = UDim2.new(0.075, 0, 0.37, 0)
 SpeedLabel.Text = "🚀 СКОРОСТЬ"
 SpeedLabel.TextColor3 = Color3.fromRGB(150, 150, 170)
-SpeedLabel.TextSize = 11
+SpeedLabel.TextSize = 12
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
 SpeedLabel.BackgroundTransparency = 1
 SpeedLabel.Parent = Content
 
 local SpeedSlider = Instance.new("ScrollingFrame")
-SpeedSlider.Size = UDim2.new(0.7, 0, 0, 20)
-SpeedSlider.Position = UDim2.new(0.075, 0, 0.5, 0)
+SpeedSlider.Size = UDim2.new(0.55, 0, 0, 22)
+SpeedSlider.Position = UDim2.new(0.075, 0, 0.45, 0)
 SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 SpeedSlider.BorderSizePixel = 0
-SpeedSlider.ScrollBarThickness = 8
+SpeedSlider.ScrollBarThickness = 10
 SpeedSlider.CanvasSize = UDim2.new(0, 0, 0, 0)
 SpeedSlider.Parent = Content
 
 local SpeedCorner = Instance.new("UICorner")
-SpeedCorner.CornerRadius = UDim.new(0, 10)
+SpeedCorner.CornerRadius = UDim.new(0, 11)
 SpeedCorner.Parent = SpeedSlider
 
 local SpeedValue = Instance.new("TextLabel")
-SpeedValue.Size = UDim2.new(0.2, 0, 0, 18)
-SpeedValue.Position = UDim2.new(0.75, 0, 0.5, 0)
+SpeedValue.Size = UDim2.new(0.2, 0, 0, 22)
+SpeedValue.Position = UDim2.new(0.75, 0, 0.45, 0)
 SpeedValue.Text = "50"
 SpeedValue.TextColor3 = Color3.fromRGB(220, 220, 240)
-SpeedValue.TextSize = 14
+SpeedValue.TextSize = 16
 SpeedValue.TextXAlignment = Enum.TextXAlignment.Right
 SpeedValue.BackgroundTransparency = 1
 SpeedValue.Parent = Content
 
 -- Ползунок (реализация через скролл)
 local function UpdateSpeed()
-    local scrollPos = SpeedSlider.ScrollbarThickness
     local percent = SpeedSlider.CanvasPosition.Y / 100
     Speed = math.floor(percent * 500)
     if Speed < 1 then Speed = 1 end
@@ -177,48 +176,45 @@ local function UpdateSpeed()
 end
 
 SpeedSlider:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateSpeed)
+SpeedSlider.MouseButton1Down:Connect(UpdateSpeed)
 
--- Клик по ползунку для установки
-SpeedSlider.MouseButton1Down:Connect(function()
-    UpdateSpeed()
-end)
+-- ===== КНОПКИ СТАРТ И СТОП (БОЛЬШИЕ) =====
 
--- Кнопки Старт/Стоп
 local StartBtn = Instance.new("TextButton")
-StartBtn.Size = UDim2.new(0.42, 0, 0, 35)
-StartBtn.Position = UDim2.new(0.075, 0, 0.65, 0)
+StartBtn.Size = UDim2.new(0.42, 0, 0, 45)
+StartBtn.Position = UDim2.new(0.075, 0, 0.6, 0)
 StartBtn.Text = "🚀 СТАРТ"
 StartBtn.TextColor3 = Color3.new(1, 1, 1)
-StartBtn.TextSize = 14
+StartBtn.TextSize = 18
 StartBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
 StartBtn.BorderSizePixel = 0
 StartBtn.Parent = Content
 
 local StartCorner = Instance.new("UICorner")
-StartCorner.CornerRadius = UDim.new(0, 6)
+StartCorner.CornerRadius = UDim.new(0, 8)
 StartCorner.Parent = StartBtn
 
 local StopBtn = Instance.new("TextButton")
-StopBtn.Size = UDim2.new(0.42, 0, 0, 35)
-StopBtn.Position = UDim2.new(0.51, 0, 0.65, 0)
+StopBtn.Size = UDim2.new(0.42, 0, 0, 45)
+StopBtn.Position = UDim2.new(0.51, 0, 0.6, 0)
 StopBtn.Text = "⏹ СТОП"
 StopBtn.TextColor3 = Color3.new(1, 1, 1)
-StopBtn.TextSize = 14
+StopBtn.TextSize = 18
 StopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 StopBtn.BorderSizePixel = 0
 StopBtn.Parent = Content
 
 local StopCorner = Instance.new("UICorner")
-StopCorner.CornerRadius = UDim.new(0, 6)
+StopCorner.CornerRadius = UDim.new(0, 8)
 StopCorner.Parent = StopBtn
 
 -- Статус
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 18)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.85, 0)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 22)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.84, 0)
 StatusLabel.Text = "🟢 Готов"
 StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
-StatusLabel.TextSize = 12
+StatusLabel.TextSize = 13
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
@@ -301,20 +297,17 @@ local function StartFlight()
     StartBtn.Text = "⏳ ЛЕТИТ..."
     StartBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 100)
     
-    -- Отключаем гравитацию
     Humanoid.PlatformStand = true
     Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
     Humanoid:SetStateEnabled(Enum.HumanoidStateType.GettingUp, false)
     Humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
     Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
     
-    -- BodyVelocity
     BodyVelocity = Instance.new("BodyVelocity")
     BodyVelocity.Velocity = Vector3.new(0, 0, 0)
     BodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
     BodyVelocity.Parent = RootPart
     
-    -- BodyGyro
     BodyGyro = Instance.new("BodyGyro")
     BodyGyro.CFrame = RootPart.CFrame
     BodyGyro.MaxTorque = Vector3.new(400000, 400000, 400000)
@@ -399,38 +392,21 @@ end
 -- ===== КНОПКИ =====
 
 AddBtn.MouseButton1Click:Connect(AddPoint)
-
 ClearBtn.MouseButton1Click:Connect(ClearPoints)
-
 StartBtn.MouseButton1Click:Connect(function()
-    if IsFlying then
-        StopFlight()
-    else
-        StartFlight()
-    end
+    if IsFlying then StopFlight() else StartFlight() end
 end)
-
 StopBtn.MouseButton1Click:Connect(StopFlight)
 
--- Горячая клавиша: F (Старт/Стоп)
+-- Горячие клавиши
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if GameProcessed then return end
     if Input.KeyCode == Enum.KeyCode.F then
         StartBtn.MouseButton1Click:Connect()
     end
-end)
-
--- Горячая клавиша: G (Стоп)
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
-    if GameProcessed then return end
     if Input.KeyCode == Enum.KeyCode.G then
         StopBtn.MouseButton1Click:Connect()
     end
-end)
-
--- Горячая клавиша: N (Добавить точку)
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
-    if GameProcessed then return end
     if Input.KeyCode == Enum.KeyCode.N then
         AddBtn.MouseButton1Click:Connect()
     end
@@ -438,16 +414,14 @@ end)
 
 Player.CharacterAdded:Connect(function()
     task.wait(0.5)
-    if IsFlying then
-        StopFlight()
-    end
+    if IsFlying then StopFlight() end
 end)
 
 MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 30) or UDim2.new(0, 240, 0, 200)
+    MainFrame.Size = Minimized and UDim2.new(0, 280, 0, 35) or UDim2.new(0, 280, 0, 280)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
