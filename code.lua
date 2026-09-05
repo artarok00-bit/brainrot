@@ -1,5 +1,5 @@
--- [[ NOCLIP (Client-Side) ]]
--- Подмена коллизий через клиентскую сторону
+-- [[ NOCLIP (BodyVelocity) ]]
+-- Использует BodyVelocity для "вдавливания" в стены
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -7,11 +7,12 @@ local RunService = game:GetService("RunService")
 
 local NoclipActive = false
 local Minimized = false
+local BodyVelocity = nil
+local BodyGyro = nil
 local Hotkey = Enum.KeyCode.LeftAlt
 local IsWaitingForKey = false
-local OriginalCollisions = {}
 
--- GUI (такой же, как в первом скрипте)
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NoclipGUI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
@@ -31,6 +32,7 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 10)
 Corner.Parent = MainFrame
 
+-- Заголовок
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 35)
 TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
@@ -44,7 +46,7 @@ TitleCorner.Parent = TitleBar
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-TitleText.Text = "🧱 NOCLIP (CS)"
+TitleText.Text = "🧱 NOCLIP (BV)"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 16
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -79,6 +81,7 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 4)
 CloseCorner.Parent = CloseBtn
 
+-- Контент
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, 0, 1, -35)
 Content.Position = UDim2.new(0, 0, 0, 35)
@@ -174,27 +177,6 @@ local function UpdateHotkeyDisplay()
     HotkeyDisplay.Text = name
 end
 
-local function SaveCollisions()
-    OriginalCollisions = {}
-    local Character = Player.Character
-    if not Character then return end
-    
-    for _, part in pairs(Character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            OriginalCollisions[part] = part.CanCollide
-        end
-    end
-end
-
-local function RestoreCollisions()
-    for part, value in pairs(OriginalCollisions) do
-        if part and part.Parent then
-            part.CanCollide = value
-        end
-    end
-    OriginalCollisions = {}
-end
-
 local function EnableNoclip()
     if NoclipActive then return end
     NoclipActive = true
@@ -205,13 +187,51 @@ local function EnableNoclip()
     local Character = Player.Character
     if not Character then return end
     
-    SaveCollisions()
+    local RootPart = Character:FindFirstChild("HumanoidRootPart")
+    if not RootPart then return end
     
+    -- Отключаем коллизии
     for _, part in pairs(Character:GetDescendants()) do
         if part:IsA("BasePart") then
             part.CanCollide = false
         end
     end
+    
+    -- Создаём BodyVelocity
+    BodyVelocity = Instance.new("BodyVelocity")
+    BodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    BodyVelocity.MaxForce = Vector3.new(4000, 4000, 4000)
+    BodyVelocity.Parent = RootPart
+    
+    -- BodyGyro для стабилизации
+    BodyGyro = Instance.new("BodyGyro")
+    BodyGyro.CFrame = RootPart.CFrame
+    BodyGyro.MaxTorque = Vector3.new(4000, 4000, 4000)
+    BodyGyro.Parent = RootPart
+    
+    -- Отключаем гравитацию
+    local Humanoid = Character:FindFirstChild("Humanoid")
+    if Humanoid then
+        Humanoid.PlatformStand = true
+    end
+    
+    -- Двигаемся в направлении камеры
+    RunService.Heartbeat:Connect(function()
+        if not NoclipActive or not RootPart then return end
+        
+        local Camera = workspace.CurrentCamera
+        if Camera then
+            local LookDirection = Camera.CFrame.LookVector
+            local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
+            
+            if BodyVelocity then
+                BodyVelocity.Velocity = HorizontalLook * 25
+            end
+            if BodyGyro then
+                BodyGyro.CFrame = CFrame.lookAt(RootPart.Position, RootPart.Position + HorizontalLook)
+            end
+        end
+    end)
 end
 
 local function DisableNoclip()
@@ -221,7 +241,28 @@ local function DisableNoclip()
     StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
     
-    RestoreCollisions()
+    if BodyVelocity then
+        BodyVelocity:Destroy()
+        BodyVelocity = nil
+    end
+    if BodyGyro then
+        BodyGyro:Destroy()
+        BodyGyro = nil
+    end
+    
+    local Character = Player.Character
+    if Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+        
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.PlatformStand = false
+        end
+    end
 end
 
 local function ToggleNoclip()
@@ -229,7 +270,7 @@ local function ToggleNoclip()
 end
 
 Player.CharacterAdded:Connect(function()
-    task.wait(0.1)
+    task.wait(0.5)
     if NoclipActive then
         DisableNoclip()
         EnableNoclip()
@@ -284,4 +325,4 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 UpdateHotkeyDisplay()
-print("✅ Noclip (Client-Side) загружен!")
+print("✅ Noclip (BodyVelocity) загружен! Клавиша: LeftAlt")
