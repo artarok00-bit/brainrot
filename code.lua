@@ -1,5 +1,6 @@
--- [[ NOCLIP (BodyVelocity) ]]
+-- [[ NOCLIP (BodyVelocity) с ползунком скорости ]]
 -- Использует BodyVelocity для "вдавливания" в стены
+-- Ползунок скорости от 5 до 100
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -9,8 +10,10 @@ local NoclipActive = false
 local Minimized = false
 local BodyVelocity = nil
 local BodyGyro = nil
+local Speed = 25
 local Hotkey = Enum.KeyCode.LeftAlt
 local IsWaitingForKey = false
+local HeartbeatConnection = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -19,8 +22,8 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 240, 0, 180)
-MainFrame.Position = UDim2.new(0.5, -120, 0.5, -90)
+MainFrame.Size = UDim2.new(0, 260, 0, 220)
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -110)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -88,12 +91,13 @@ Content.Position = UDim2.new(0, 0, 0, 35)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
+-- Кнопка ВКЛ
 local OnBtn = Instance.new("TextButton")
-OnBtn.Size = UDim2.new(0.4, 0, 0, 40)
-OnBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
+OnBtn.Size = UDim2.new(0.4, 0, 0, 38)
+OnBtn.Position = UDim2.new(0.05, 0, 0.04, 0)
 OnBtn.Text = "✅ ВКЛ"
 OnBtn.TextColor3 = Color3.new(1, 1, 1)
-OnBtn.TextSize = 16
+OnBtn.TextSize = 15
 OnBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
 OnBtn.BorderSizePixel = 0
 OnBtn.Parent = Content
@@ -102,12 +106,13 @@ local OnCorner = Instance.new("UICorner")
 OnCorner.CornerRadius = UDim.new(0, 8)
 OnCorner.Parent = OnBtn
 
+-- Кнопка ВЫКЛ
 local OffBtn = Instance.new("TextButton")
-OffBtn.Size = UDim2.new(0.4, 0, 0, 40)
-OffBtn.Position = UDim2.new(0.55, 0, 0.05, 0)
+OffBtn.Size = UDim2.new(0.4, 0, 0, 38)
+OffBtn.Position = UDim2.new(0.55, 0, 0.04, 0)
 OffBtn.Text = "❌ ВЫКЛ"
 OffBtn.TextColor3 = Color3.new(1, 1, 1)
-OffBtn.TextSize = 16
+OffBtn.TextSize = 15
 OffBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 OffBtn.BorderSizePixel = 0
 OffBtn.Parent = Content
@@ -116,56 +121,101 @@ local OffCorner = Instance.new("UICorner")
 OffCorner.CornerRadius = UDim.new(0, 8)
 OffCorner.Parent = OffBtn
 
+-- Статус
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 22)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.37, 0)
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.27, 0)
 StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
 StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
-StatusLabel.TextSize = 14
+StatusLabel.TextSize = 13
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
+-- Ползунок скорости
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.4, 0, 0, 18)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
+SpeedLabel.Text = "🚀 СКОРОСТЬ"
+SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+SpeedLabel.TextSize = 11
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Parent = Content
+
+local SpeedSlider = Instance.new("ScrollingFrame")
+SpeedSlider.Size = UDim2.new(0.55, 0, 0, 18)
+SpeedSlider.Position = UDim2.new(0.05, 0, 0.5, 0)
+SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+SpeedSlider.BorderSizePixel = 0
+SpeedSlider.ScrollBarThickness = 8
+SpeedSlider.CanvasSize = UDim2.new(0, 0, 0, 0)
+SpeedSlider.Parent = Content
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 9)
+SpeedCorner.Parent = SpeedSlider
+
+local SpeedValue = Instance.new("TextLabel")
+SpeedValue.Size = UDim2.new(0.2, 0, 0, 18)
+SpeedValue.Position = UDim2.new(0.75, 0, 0.5, 0)
+SpeedValue.Text = "25"
+SpeedValue.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedValue.TextSize = 14
+SpeedValue.TextXAlignment = Enum.TextXAlignment.Right
+SpeedValue.BackgroundTransparency = 1
+SpeedValue.Parent = Content
+
+local function UpdateSpeed()
+    local percent = SpeedSlider.CanvasPosition.Y / 100
+    Speed = math.floor(percent * 95) + 5
+    SpeedValue.Text = tostring(Speed)
+end
+
+SpeedSlider:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateSpeed)
+SpeedSlider.MouseButton1Down:Connect(UpdateSpeed)
+
+-- Горячая клавиша
 local HotkeyLabel = Instance.new("TextLabel")
-HotkeyLabel.Size = UDim2.new(0.4, 0, 0, 22)
-HotkeyLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
+HotkeyLabel.Size = UDim2.new(0.35, 0, 0, 18)
+HotkeyLabel.Position = UDim2.new(0.05, 0, 0.72, 0)
 HotkeyLabel.Text = "КЛАВИША:"
 HotkeyLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-HotkeyLabel.TextSize = 12
+HotkeyLabel.TextSize = 11
 HotkeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 HotkeyLabel.BackgroundTransparency = 1
 HotkeyLabel.Parent = Content
 
 local HotkeyDisplay = Instance.new("TextLabel")
-HotkeyDisplay.Size = UDim2.new(0.4, 0, 0, 22)
-HotkeyDisplay.Position = UDim2.new(0.4, 0, 0.55, 0)
+HotkeyDisplay.Size = UDim2.new(0.3, 0, 0, 18)
+HotkeyDisplay.Position = UDim2.new(0.35, 0, 0.72, 0)
 HotkeyDisplay.Text = "LALT"
 HotkeyDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-HotkeyDisplay.TextSize = 13
+HotkeyDisplay.TextSize = 12
 HotkeyDisplay.TextXAlignment = Enum.TextXAlignment.Left
 HotkeyDisplay.BackgroundTransparency = 1
 HotkeyDisplay.Parent = Content
 
 local ChangeKeyBtn = Instance.new("TextButton")
-ChangeKeyBtn.Size = UDim2.new(0.3, 0, 0, 28)
-ChangeKeyBtn.Position = UDim2.new(0.65, 0, 0.53, 0)
+ChangeKeyBtn.Size = UDim2.new(0.25, 0, 0, 22)
+ChangeKeyBtn.Position = UDim2.new(0.7, 0, 0.7, 0)
 ChangeKeyBtn.Text = "СМЕНИТЬ"
 ChangeKeyBtn.TextColor3 = Color3.new(1, 1, 1)
-ChangeKeyBtn.TextSize = 12
+ChangeKeyBtn.TextSize = 11
 ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
 ChangeKeyBtn.BorderSizePixel = 0
 ChangeKeyBtn.Parent = Content
 
 local ChangeKeyCorner = Instance.new("UICorner")
-ChangeKeyCorner.CornerRadius = UDim.new(0, 6)
+ChangeKeyCorner.CornerRadius = UDim.new(0, 5)
 ChangeKeyCorner.Parent = ChangeKeyBtn
 
 local WaitingLabel = Instance.new("TextLabel")
-WaitingLabel.Size = UDim2.new(0.9, 0, 0, 22)
-WaitingLabel.Position = UDim2.new(0.05, 0, 0.78, 0)
+WaitingLabel.Size = UDim2.new(0.9, 0, 0, 18)
+WaitingLabel.Position = UDim2.new(0.05, 0, 0.87, 0)
 WaitingLabel.Text = ""
 WaitingLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-WaitingLabel.TextSize = 13
+WaitingLabel.TextSize = 11
 WaitingLabel.TextXAlignment = Enum.TextXAlignment.Center
 WaitingLabel.BackgroundTransparency = 1
 WaitingLabel.Parent = Content
@@ -215,8 +265,11 @@ local function EnableNoclip()
         Humanoid.PlatformStand = true
     end
     
-    -- Двигаемся в направлении камеры
-    RunService.Heartbeat:Connect(function()
+    if HeartbeatConnection then
+        HeartbeatConnection:Disconnect()
+    end
+    
+    HeartbeatConnection = RunService.Heartbeat:Connect(function()
         if not NoclipActive or not RootPart then return end
         
         local Camera = workspace.CurrentCamera
@@ -225,7 +278,7 @@ local function EnableNoclip()
             local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
             
             if BodyVelocity then
-                BodyVelocity.Velocity = HorizontalLook * 25
+                BodyVelocity.Velocity = HorizontalLook * Speed
             end
             if BodyGyro then
                 BodyGyro.CFrame = CFrame.lookAt(RootPart.Position, RootPart.Position + HorizontalLook)
@@ -240,6 +293,11 @@ local function DisableNoclip()
     
     StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
+    
+    if HeartbeatConnection then
+        HeartbeatConnection:Disconnect()
+        HeartbeatConnection = nil
+    end
     
     if BodyVelocity then
         BodyVelocity:Destroy()
@@ -316,7 +374,7 @@ MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 35) or UDim2.new(0, 240, 0, 180)
+    MainFrame.Size = Minimized and UDim2.new(0, 260, 0, 35) or UDim2.new(0, 260, 0, 220)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -325,4 +383,4 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 UpdateHotkeyDisplay()
-print("✅ Noclip (BodyVelocity) загружен! Клавиша: LeftAlt")
+print("✅ Noclip (BodyVelocity) загружен! Скорость регулируется ползунком.")
