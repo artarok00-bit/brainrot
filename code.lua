@@ -1,5 +1,5 @@
--- [[ NOCLIP (ON/OFF) ]]
--- Простой ноклип с двумя кнопками: ВКЛ / ВЫКЛ
+-- [[ NOCLIP (ON/OFF) с выбором горячей клавиши ]]
+-- Кнопки ВКЛ/ВЫКЛ + выбор клавиши (по умолчанию LeftAlt)
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -8,6 +8,8 @@ local RunService = game:GetService("RunService")
 local NoclipActive = false
 local Minimized = false
 local LoopConnection = nil
+local Hotkey = Enum.KeyCode.LeftAlt
+local IsWaitingForKey = false
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -16,8 +18,8 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 200, 0, 130)
-MainFrame.Position = UDim2.new(0.5, -100, 0.5, -65)
+MainFrame.Size = UDim2.new(0, 240, 0, 180)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -90)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -88,7 +90,7 @@ Content.Parent = MainFrame
 -- Кнопка ВКЛ
 local OnBtn = Instance.new("TextButton")
 OnBtn.Size = UDim2.new(0.4, 0, 0, 40)
-OnBtn.Position = UDim2.new(0.05, 0, 0.15, 0)
+OnBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
 OnBtn.Text = "✅ ВКЛ"
 OnBtn.TextColor3 = Color3.new(1, 1, 1)
 OnBtn.TextSize = 16
@@ -103,7 +105,7 @@ OnCorner.Parent = OnBtn
 -- Кнопка ВЫКЛ
 local OffBtn = Instance.new("TextButton")
 OffBtn.Size = UDim2.new(0.4, 0, 0, 40)
-OffBtn.Position = UDim2.new(0.55, 0, 0.15, 0)
+OffBtn.Position = UDim2.new(0.55, 0, 0.05, 0)
 OffBtn.Text = "❌ ВЫКЛ"
 OffBtn.TextColor3 = Color3.new(1, 1, 1)
 OffBtn.TextSize = 16
@@ -118,7 +120,7 @@ OffCorner.Parent = OffBtn
 -- Статус
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 22)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.37, 0)
 StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
 StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
 StatusLabel.TextSize = 14
@@ -126,7 +128,59 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
+-- Горячая клавиша
+local HotkeyLabel = Instance.new("TextLabel")
+HotkeyLabel.Size = UDim2.new(0.4, 0, 0, 22)
+HotkeyLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
+HotkeyLabel.Text = "КЛАВИША:"
+HotkeyLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
+HotkeyLabel.TextSize = 12
+HotkeyLabel.TextXAlignment = Enum.TextXAlignment.Left
+HotkeyLabel.BackgroundTransparency = 1
+HotkeyLabel.Parent = Content
+
+local HotkeyDisplay = Instance.new("TextLabel")
+HotkeyDisplay.Size = UDim2.new(0.4, 0, 0, 22)
+HotkeyDisplay.Position = UDim2.new(0.4, 0, 0.55, 0)
+HotkeyDisplay.Text = "LALT"
+HotkeyDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
+HotkeyDisplay.TextSize = 13
+HotkeyDisplay.TextXAlignment = Enum.TextXAlignment.Left
+HotkeyDisplay.BackgroundTransparency = 1
+HotkeyDisplay.Parent = Content
+
+-- Кнопка смены клавиши
+local ChangeKeyBtn = Instance.new("TextButton")
+ChangeKeyBtn.Size = UDim2.new(0.3, 0, 0, 28)
+ChangeKeyBtn.Position = UDim2.new(0.65, 0, 0.53, 0)
+ChangeKeyBtn.Text = "СМЕНИТЬ"
+ChangeKeyBtn.TextColor3 = Color3.new(1, 1, 1)
+ChangeKeyBtn.TextSize = 12
+ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
+ChangeKeyBtn.BorderSizePixel = 0
+ChangeKeyBtn.Parent = Content
+
+local ChangeKeyCorner = Instance.new("UICorner")
+ChangeKeyCorner.CornerRadius = UDim.new(0, 6)
+ChangeKeyCorner.Parent = ChangeKeyBtn
+
+-- Ожидание клавиши
+local WaitingLabel = Instance.new("TextLabel")
+WaitingLabel.Size = UDim2.new(0.9, 0, 0, 22)
+WaitingLabel.Position = UDim2.new(0.05, 0, 0.78, 0)
+WaitingLabel.Text = ""
+WaitingLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+WaitingLabel.TextSize = 13
+WaitingLabel.TextXAlignment = Enum.TextXAlignment.Center
+WaitingLabel.BackgroundTransparency = 1
+WaitingLabel.Parent = Content
+
 -- ===== ФУНКЦИИ =====
+
+local function UpdateHotkeyDisplay()
+    local name = tostring(Hotkey):gsub("Enum.KeyCode.", "")
+    HotkeyDisplay.Text = name
+end
 
 local function EnableNoclip()
     if NoclipActive then return end
@@ -183,6 +237,14 @@ local function DisableNoclip()
     end
 end
 
+local function ToggleNoclip()
+    if NoclipActive then
+        DisableNoclip()
+    else
+        EnableNoclip()
+    end
+end
+
 -- Обновление при смене персонажа
 Player.CharacterAdded:Connect(function()
     task.wait(0.1)
@@ -192,29 +254,51 @@ Player.CharacterAdded:Connect(function()
     end
 end)
 
+-- ===== ВЫБОР КЛАВИШИ =====
+
+ChangeKeyBtn.MouseButton1Click:Connect(function()
+    if IsWaitingForKey then return end
+    IsWaitingForKey = true
+    WaitingLabel.Text = "⏳ Нажми любую клавишу..."
+    ChangeKeyBtn.Text = "⏳..."
+    ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 100)
+end)
+
+UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+    if GameProcessed then return end
+    
+    -- Ожидание выбора клавиши
+    if IsWaitingForKey then
+        if Input.KeyCode ~= Enum.KeyCode.Unknown then
+            Hotkey = Input.KeyCode
+            UpdateHotkeyDisplay()
+            IsWaitingForKey = false
+            WaitingLabel.Text = "✅ Клавиша изменена!"
+            ChangeKeyBtn.Text = "СМЕНИТЬ"
+            ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
+            task.wait(0.5)
+            WaitingLabel.Text = ""
+        end
+        return
+    end
+    
+    -- Горячая клавиша для ноклипа
+    if Input.KeyCode == Hotkey then
+        ToggleNoclip()
+    end
+end)
+
 -- ===== КНОПКИ =====
 
 OnBtn.MouseButton1Click:Connect(EnableNoclip)
 OffBtn.MouseButton1Click:Connect(DisableNoclip)
-
--- Горячая клавиша: N (вкл/выкл)
-UserInputService.InputBegan:Connect(function(Input, GameProcessed)
-    if GameProcessed then return end
-    if Input.KeyCode == Enum.KeyCode.N then
-        if NoclipActive then
-            DisableNoclip()
-        else
-            EnableNoclip()
-        end
-    end
-end)
 
 -- Управление окном
 MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 200, 0, 35) or UDim2.new(0, 200, 0, 130)
+    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 35) or UDim2.new(0, 240, 0, 180)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -222,4 +306,5 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-print("✅ Noclip загружен! Кнопки ВКЛ/ВЫКЛ, клавиша N")
+UpdateHotkeyDisplay()
+print("✅ Noclip загружен! Клавиша: LeftAlt (можно сменить)")
