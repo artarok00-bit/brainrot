@@ -1,35 +1,35 @@
--- [[ NOCLIP ULTRA (плавный, безопасный) ]]
--- Уменьшенный шаг + движение только при ходьбе + новый интерфейс
+-- [[ GOD MODE + NOCLIP ULTRA ]]
+-- Два режима в одном меню: Бессмертие и Ноклип
 
 local Player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
-local NoclipActive = false
+-- Состояния
+local GodMode = false
+local NoclipMode = false
 local Minimized = false
-local Hotkey = Enum.KeyCode.LeftAlt
-local Connection = nil
-local FrameCounter = 0
-local StepSize = 0.15 -- Безопасный шаг
 
--- GUI (такой же как в предыдущем, копируем полностью)
+-- Горячие клавиши
+local GodKey = Enum.KeyCode.G
+local NoclipKey = Enum.KeyCode.N
+
+-- Переменные ноклипа
+local NoclipConnection = nil
+local StepSize = 0.15
+local FrameCounter = 0
+
+-- GUI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NoclipGUI"
+ScreenGui.Name = "UltimateGUI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-local Background = Instance.new("Frame")
-Background.Size = UDim2.new(0, 0, 0, 0)
-Background.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Background.BackgroundTransparency = 0.5
-Background.BorderSizePixel = 0
-Background.Parent = ScreenGui
-
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 280, 0, 180)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
+MainFrame.Size = UDim2.new(0, 300, 0, 240)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -120)
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -51,6 +51,7 @@ local ShadowCorner = Instance.new("UICorner")
 ShadowCorner.CornerRadius = UDim.new(0, 16)
 ShadowCorner.Parent = Shadow
 
+-- Заголовок
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 45)
 TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
@@ -69,7 +70,7 @@ TitleGradient.Parent = TitleBar
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-TitleText.Text = "🧱 NOCLIP ULTRA"
+TitleText.Text = "🛡️🧱 ULTIMATE"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 18
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -103,97 +104,170 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 6)
 CloseCorner.Parent = CloseBtn
 
+-- Контент
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, 0, 1, -45)
 Content.Position = UDim2.new(0, 0, 0, 45)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
-local OnBtn = Instance.new("TextButton")
-OnBtn.Size = UDim2.new(0.4, 0, 0, 40)
-OnBtn.Position = UDim2.new(0.08, 0, 0.1, 0)
-OnBtn.Text = "✅ ДАВАЙ ВКЛЮЧАЙ"
-OnBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OnBtn.TextSize = 16
-OnBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
-OnBtn.BorderSizePixel = 0
-OnBtn.Font = Enum.Font.GothamSemibold
-OnBtn.Parent = Content
-local OnCorner = Instance.new("UICorner")
-OnCorner.CornerRadius = UDim.new(0, 8)
-OnCorner.Parent = OnBtn
+-- ===== СЕКЦИЯ БЕССМЕРТИЯ =====
 
-local OffBtn = Instance.new("TextButton")
-OffBtn.Size = UDim2.new(0.4, 0, 0, 40)
-OffBtn.Position = UDim2.new(0.52, 0, 0.1, 0)
-OffBtn.Text = "❌ ВЫРУБИ НАХУЙ"
-OffBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OffBtn.TextSize = 16
-OffBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-OffBtn.BorderSizePixel = 0
-OffBtn.Font = Enum.Font.GothamSemibold
-OffBtn.Parent = Content
-local OffCorner = Instance.new("UICorner")
-OffCorner.CornerRadius = UDim.new(0, 8)
-OffCorner.Parent = OffBtn
+local GodSection = Instance.new("Frame")
+GodSection.Size = UDim2.new(1, 0, 0, 80)
+GodSection.Position = UDim2.new(0, 0, 0, 0)
+GodSection.BackgroundTransparency = 1
+GodSection.Parent = Content
 
-local function OnHover(btn, hover)
-    local tween = TweenService:Create(btn, TweenInfo.new(0.2), {
-        BackgroundColor3 = hover and Color3.fromRGB(0, 220, 100) or Color3.fromRGB(0, 180, 80)
-    })
-    tween:Play()
+local GodLabel = Instance.new("TextLabel")
+GodLabel.Size = UDim2.new(0.5, 0, 0, 20)
+GodLabel.Position = UDim2.new(0.05, 0, 0, 0)
+GodLabel.Text = "🛡️ БЕССМЕРТИЕ"
+GodLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+GodLabel.TextSize = 14
+GodLabel.TextXAlignment = Enum.TextXAlignment.Left
+GodLabel.BackgroundTransparency = 1
+GodLabel.Font = Enum.Font.GothamSemibold
+GodLabel.Parent = GodSection
+
+local GodStatus = Instance.new("TextLabel")
+GodStatus.Size = UDim2.new(0.3, 0, 0, 18)
+GodStatus.Position = UDim2.new(0.65, 0, 0.02, 0)
+GodStatus.Text = "🔴 ВЫКЛ"
+GodStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
+GodStatus.TextSize = 13
+GodStatus.TextXAlignment = Enum.TextXAlignment.Right
+GodStatus.BackgroundTransparency = 1
+GodStatus.Font = Enum.Font.Gotham
+GodStatus.Parent = GodSection
+
+local GodBtn = Instance.new("TextButton")
+GodBtn.Size = UDim2.new(0.85, 0, 0, 32)
+GodBtn.Position = UDim2.new(0.075, 0, 0.25, 0)
+GodBtn.Text = "ВКЛЮЧИТЬ"
+GodBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+GodBtn.TextSize = 14
+GodBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+GodBtn.BorderSizePixel = 0
+GodBtn.Font = Enum.Font.GothamSemibold
+GodBtn.Parent = GodSection
+local GodCorner = Instance.new("UICorner")
+GodCorner.CornerRadius = UDim.new(0, 8)
+GodCorner.Parent = GodBtn
+
+local GodHotkey = Instance.new("TextLabel")
+GodHotkey.Size = UDim2.new(0.4, 0, 0, 16)
+GodHotkey.Position = UDim2.new(0.075, 0, 0.7, 0)
+GodHotkey.Text = "⌨️ G"
+GodHotkey.TextColor3 = Color3.fromRGB(160, 160, 180)
+GodHotkey.TextSize = 11
+GodHotkey.TextXAlignment = Enum.TextXAlignment.Left
+GodHotkey.BackgroundTransparency = 1
+GodHotkey.Font = Enum.Font.Gotham
+GodHotkey.Parent = GodSection
+
+-- ===== СЕКЦИЯ НОКЛИП =====
+
+local NoclipSection = Instance.new("Frame")
+NoclipSection.Size = UDim2.new(1, 0, 0, 80)
+NoclipSection.Position = UDim2.new(0, 0, 0, 85)
+NoclipSection.BackgroundTransparency = 1
+NoclipSection.Parent = Content
+
+local NoclipLabel = Instance.new("TextLabel")
+NoclipLabel.Size = UDim2.new(0.5, 0, 0, 20)
+NoclipLabel.Position = UDim2.new(0.05, 0, 0, 0)
+NoclipLabel.Text = "🧱 NOCLIP"
+NoclipLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipLabel.TextSize = 14
+NoclipLabel.TextXAlignment = Enum.TextXAlignment.Left
+NoclipLabel.BackgroundTransparency = 1
+NoclipLabel.Font = Enum.Font.GothamSemibold
+NoclipLabel.Parent = NoclipSection
+
+local NoclipStatus = Instance.new("TextLabel")
+NoclipStatus.Size = UDim2.new(0.3, 0, 0, 18)
+NoclipStatus.Position = UDim2.new(0.65, 0, 0.02, 0)
+NoclipStatus.Text = "🔴 ВЫКЛ"
+NoclipStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
+NoclipStatus.TextSize = 13
+NoclipStatus.TextXAlignment = Enum.TextXAlignment.Right
+NoclipStatus.BackgroundTransparency = 1
+NoclipStatus.Font = Enum.Font.Gotham
+NoclipStatus.Parent = NoclipSection
+
+local NoclipBtn = Instance.new("TextButton")
+NoclipBtn.Size = UDim2.new(0.85, 0, 0, 32)
+NoclipBtn.Position = UDim2.new(0.075, 0, 0.25, 0)
+NoclipBtn.Text = "ВКЛЮЧИТЬ"
+NoclipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+NoclipBtn.TextSize = 14
+NoclipBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+NoclipBtn.BorderSizePixel = 0
+NoclipBtn.Font = Enum.Font.GothamSemibold
+NoclipBtn.Parent = NoclipSection
+local NoclipCorner = Instance.new("UICorner")
+NoclipCorner.CornerRadius = UDim.new(0, 8)
+NoclipCorner.Parent = NoclipBtn
+
+local NoclipHotkey = Instance.new("TextLabel")
+NoclipHotkey.Size = UDim2.new(0.4, 0, 0, 16)
+NoclipHotkey.Position = UDim2.new(0.075, 0, 0.7, 0)
+NoclipHotkey.Text = "⌨️ N"
+NoclipHotkey.TextColor3 = Color3.fromRGB(160, 160, 180)
+NoclipHotkey.TextSize = 11
+NoclipHotkey.TextXAlignment = Enum.TextXAlignment.Left
+NoclipHotkey.BackgroundTransparency = 1
+NoclipHotkey.Font = Enum.Font.Gotham
+NoclipHotkey.Parent = NoclipSection
+
+-- ===== ФУНКЦИИ БЕССМЕРТИЯ =====
+
+local function EnableGodMode()
+    if GodMode then return end
+    GodMode = true
+    
+    GodBtn.Text = "ВЫКЛЮЧИТЬ"
+    GodBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    GodStatus.Text = "🟢 ВКЛ"
+    GodStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
+    
+    local Character = Player.Character
+    if Character then
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.MaxHealth = math.huge
+            Humanoid.Health = math.huge
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        end
+    end
 end
 
-OnBtn.MouseEnter:Connect(function() OnHover(OnBtn, true) end)
-OnBtn.MouseLeave:Connect(function() OnHover(OnBtn, false) end)
+local function DisableGodMode()
+    if not GodMode then return end
+    GodMode = false
+    
+    GodBtn.Text = "ВКЛЮЧИТЬ"
+    GodBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+    GodStatus.Text = "🔴 ВЫКЛ"
+    GodStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
+    
+    local Character = Player.Character
+    if Character then
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.MaxHealth = 100
+            Humanoid.Health = 100
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+        end
+    end
+end
 
-OffBtn.MouseEnter:Connect(function() 
-    local tween = TweenService:Create(OffBtn, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(220, 60, 60)
-    })
-    tween:Play()
-end)
-OffBtn.MouseLeave:Connect(function() 
-    local tween = TweenService:Create(OffBtn, TweenInfo.new(0.2), {
-        BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-    })
-    tween:Play()
-end)
+local function ToggleGodMode()
+    if GodMode then DisableGodMode() else EnableGodMode() end
+end
 
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.45, 0)
-StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
-StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
-StatusLabel.TextSize = 15
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.Parent = Content
-
-local HotkeyLabel = Instance.new("TextLabel")
-HotkeyLabel.Size = UDim2.new(0.9, 0, 0, 20)
-HotkeyLabel.Position = UDim2.new(0.05, 0, 0.7, 0)
-HotkeyLabel.Text = "⌨️ LAlt — переключить"
-HotkeyLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
-HotkeyLabel.TextSize = 13
-HotkeyLabel.TextXAlignment = Enum.TextXAlignment.Center
-HotkeyLabel.BackgroundTransparency = 1
-HotkeyLabel.Font = Enum.Font.Gotham
-HotkeyLabel.Parent = Content
-
-local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.9, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.05, 0, 0.85, 0)
-SpeedLabel.Text = "⚡ СКОРОСТЬ: ОПТИМАЛЬНАЯ"
-SpeedLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-SpeedLabel.TextSize = 11
-SpeedLabel.TextXAlignment = Enum.TextXAlignment.Center
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Font = Enum.Font.Gotham
-SpeedLabel.Parent = Content
-
--- ===== ОСНОВНАЯ ЛОГИКА (ПЛАВНАЯ) =====
+-- ===== ФУНКЦИИ НОКЛИПА =====
 
 local function DisableCollisions()
     local Character = Player.Character
@@ -216,7 +290,7 @@ local function EnableCollisions()
 end
 
 local function NoclipLoop()
-    if not NoclipActive then return end
+    if not NoclipMode then return end
     
     local Character = Player.Character
     if not Character then return end
@@ -227,77 +301,85 @@ local function NoclipLoop()
     local Humanoid = Character:FindFirstChild("Humanoid")
     if not Humanoid then return end
     
-    -- Двигаемся только если персонаж пытается идти (нажата клавиша)
+    -- Двигаемся только при ходьбе
     if Humanoid.MoveDirection.Magnitude < 0.1 then
-        return -- не двигаемся, если стоим
+        return
     end
     
     local Camera = workspace.CurrentCamera
     if not Camera then return end
     
-    -- Отключаем коллизии
     DisableCollisions()
     
-    -- Берём направление камеры (горизонтальное)
     local LookDirection = Camera.CFrame.LookVector
     local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
     if HorizontalLook.Magnitude < 0.1 then
         HorizontalLook = Vector3.new(1, 0, 0)
     end
     
-    -- Делаем шаг только каждый 2-й кадр для плавности
     FrameCounter = FrameCounter + 1
     if FrameCounter % 2 == 0 then
         local NewPos = RootPart.Position + HorizontalLook * StepSize
         RootPart.CFrame = CFrame.new(NewPos)
     end
     
-    -- Сбрасываем скорость только у RootPart (мягко)
     RootPart.Velocity = RootPart.Velocity * 0.9
     RootPart.RotVelocity = RootPart.RotVelocity * 0.9
 end
 
 local function EnableNoclip()
-    if NoclipActive then return end
-    NoclipActive = true
+    if NoclipMode then return end
+    NoclipMode = true
     
-    StatusLabel.Text = "🟢 ВКЛЮЧЕН"
-    StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
-    SpeedLabel.Text = "⚡ СКОРОСТЬ: ОПТИМАЛЬНАЯ"
+    NoclipBtn.Text = "ВЫКЛЮЧИТЬ"
+    NoclipBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    NoclipStatus.Text = "🟢 ВКЛ"
+    NoclipStatus.TextColor3 = Color3.fromRGB(100, 200, 100)
     
     DisableCollisions()
     
-    if Connection then
-        Connection:Disconnect()
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
     end
     
     FrameCounter = 0
-    Connection = RunService.RenderStepped:Connect(NoclipLoop)
+    NoclipConnection = RunService.RenderStepped:Connect(NoclipLoop)
 end
 
 local function DisableNoclip()
-    if not NoclipActive then return end
-    NoclipActive = false
+    if not NoclipMode then return end
+    NoclipMode = false
     
-    StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
-    StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
-    SpeedLabel.Text = "⚡ СКОРОСТЬ: ОПТИМАЛЬНАЯ"
+    NoclipBtn.Text = "ВКЛЮЧИТЬ"
+    NoclipBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 80)
+    NoclipStatus.Text = "🔴 ВЫКЛ"
+    NoclipStatus.TextColor3 = Color3.fromRGB(200, 80, 80)
     
-    if Connection then
-        Connection:Disconnect()
-        Connection = nil
+    if NoclipConnection then
+        NoclipConnection:Disconnect()
+        NoclipConnection = nil
     end
     
     EnableCollisions()
 end
 
 local function ToggleNoclip()
-    if NoclipActive then DisableNoclip() else EnableNoclip() end
+    if NoclipMode then DisableNoclip() else EnableNoclip() end
 end
 
-Player.CharacterAdded:Connect(function()
+-- ===== ВОССТАНОВЛЕНИЕ ПРИ РЕСПАВНЕ =====
+
+Player.CharacterAdded:Connect(function(Character)
     task.wait(0.1)
-    if NoclipActive then
+    if GodMode then
+        local Humanoid = Character:FindFirstChild("Humanoid")
+        if Humanoid then
+            Humanoid.MaxHealth = math.huge
+            Humanoid.Health = math.huge
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        end
+    end
+    if NoclipMode then
         DisableNoclip()
         EnableNoclip()
     end
@@ -305,27 +387,33 @@ end)
 
 -- ===== КНОПКИ =====
 
-OnBtn.MouseButton1Click:Connect(EnableNoclip)
-OffBtn.MouseButton1Click:Connect(DisableNoclip)
+GodBtn.MouseButton1Click:Connect(ToggleGodMode)
+NoclipBtn.MouseButton1Click:Connect(ToggleNoclip)
 
+-- Горячие клавиши
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if GameProcessed then return end
-    if Input.KeyCode == Hotkey then
+    if Input.KeyCode == GodKey then
+        ToggleGodMode()
+    end
+    if Input.KeyCode == NoclipKey then
         ToggleNoclip()
     end
 end)
 
+-- Управление окном
 MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    local size = Minimized and UDim2.new(0, 280, 0, 45) or UDim2.new(0, 280, 0, 180)
+    local size = Minimized and UDim2.new(0, 300, 0, 45) or UDim2.new(0, 300, 0, 240)
     TweenService:Create(MainFrame, TweenInfo.new(0.3), {Size = size}):Play()
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
-    DisableNoclip()
+    if GodMode then DisableGodMode() end
+    if NoclipMode then DisableNoclip() end
     ScreenGui:Destroy()
 end)
 
-print("✅ NOCLIP ULTRA (плавный) загружен! Шаг 0.15, движение только при ходьбе. Нажми LAlt.")
+print("✅ GOD MODE + NOCLIP загружены! G — Бессмертие, N — Ноклип.")
