@@ -1,5 +1,5 @@
--- [[ NOCLIP (ON/OFF) с выбором горячей клавиши ]]
--- Кнопки ВКЛ/ВЫКЛ + выбор клавиши (по умолчанию LeftAlt)
+-- [[ NOCLIP (Client-Side) ]]
+-- Подмена коллизий через клиентскую сторону
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -7,11 +7,11 @@ local RunService = game:GetService("RunService")
 
 local NoclipActive = false
 local Minimized = false
-local LoopConnection = nil
 local Hotkey = Enum.KeyCode.LeftAlt
 local IsWaitingForKey = false
+local OriginalCollisions = {}
 
--- GUI
+-- GUI (такой же, как в первом скрипте)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NoclipGUI"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
@@ -31,7 +31,6 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(0, 10)
 Corner.Parent = MainFrame
 
--- Заголовок
 local TitleBar = Instance.new("Frame")
 TitleBar.Size = UDim2.new(1, 0, 0, 35)
 TitleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
@@ -45,7 +44,7 @@ TitleCorner.Parent = TitleBar
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-TitleText.Text = "🧱 NOCLIP"
+TitleText.Text = "🧱 NOCLIP (CS)"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 16
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -80,14 +79,12 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 4)
 CloseCorner.Parent = CloseBtn
 
--- Контент
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, 0, 1, -35)
 Content.Position = UDim2.new(0, 0, 0, 35)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Кнопка ВКЛ
 local OnBtn = Instance.new("TextButton")
 OnBtn.Size = UDim2.new(0.4, 0, 0, 40)
 OnBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
@@ -102,7 +99,6 @@ local OnCorner = Instance.new("UICorner")
 OnCorner.CornerRadius = UDim.new(0, 8)
 OnCorner.Parent = OnBtn
 
--- Кнопка ВЫКЛ
 local OffBtn = Instance.new("TextButton")
 OffBtn.Size = UDim2.new(0.4, 0, 0, 40)
 OffBtn.Position = UDim2.new(0.55, 0, 0.05, 0)
@@ -117,7 +113,6 @@ local OffCorner = Instance.new("UICorner")
 OffCorner.CornerRadius = UDim.new(0, 8)
 OffCorner.Parent = OffBtn
 
--- Статус
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 22)
 StatusLabel.Position = UDim2.new(0.05, 0, 0.37, 0)
@@ -128,7 +123,6 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- Горячая клавиша
 local HotkeyLabel = Instance.new("TextLabel")
 HotkeyLabel.Size = UDim2.new(0.4, 0, 0, 22)
 HotkeyLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
@@ -149,7 +143,6 @@ HotkeyDisplay.TextXAlignment = Enum.TextXAlignment.Left
 HotkeyDisplay.BackgroundTransparency = 1
 HotkeyDisplay.Parent = Content
 
--- Кнопка смены клавиши
 local ChangeKeyBtn = Instance.new("TextButton")
 ChangeKeyBtn.Size = UDim2.new(0.3, 0, 0, 28)
 ChangeKeyBtn.Position = UDim2.new(0.65, 0, 0.53, 0)
@@ -164,7 +157,6 @@ local ChangeKeyCorner = Instance.new("UICorner")
 ChangeKeyCorner.CornerRadius = UDim.new(0, 6)
 ChangeKeyCorner.Parent = ChangeKeyBtn
 
--- Ожидание клавиши
 local WaitingLabel = Instance.new("TextLabel")
 WaitingLabel.Size = UDim2.new(0.9, 0, 0, 22)
 WaitingLabel.Position = UDim2.new(0.05, 0, 0.78, 0)
@@ -182,6 +174,27 @@ local function UpdateHotkeyDisplay()
     HotkeyDisplay.Text = name
 end
 
+local function SaveCollisions()
+    OriginalCollisions = {}
+    local Character = Player.Character
+    if not Character then return end
+    
+    for _, part in pairs(Character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            OriginalCollisions[part] = part.CanCollide
+        end
+    end
+end
+
+local function RestoreCollisions()
+    for part, value in pairs(OriginalCollisions) do
+        if part and part.Parent then
+            part.CanCollide = value
+        end
+    end
+    OriginalCollisions = {}
+end
+
 local function EnableNoclip()
     if NoclipActive then return end
     NoclipActive = true
@@ -192,27 +205,13 @@ local function EnableNoclip()
     local Character = Player.Character
     if not Character then return end
     
+    SaveCollisions()
+    
     for _, part in pairs(Character:GetDescendants()) do
         if part:IsA("BasePart") then
             part.CanCollide = false
         end
     end
-    
-    if LoopConnection then
-        LoopConnection:Disconnect()
-    end
-    
-    LoopConnection = RunService.Heartbeat:Connect(function()
-        if not NoclipActive then return end
-        local Character = Player.Character
-        if not Character then return end
-        
-        for _, part in pairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
-    end)
 end
 
 local function DisableNoclip()
@@ -222,30 +221,13 @@ local function DisableNoclip()
     StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
     
-    if LoopConnection then
-        LoopConnection:Disconnect()
-        LoopConnection = nil
-    end
-    
-    local Character = Player.Character
-    if not Character then return end
-    
-    for _, part in pairs(Character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = true
-        end
-    end
+    RestoreCollisions()
 end
 
 local function ToggleNoclip()
-    if NoclipActive then
-        DisableNoclip()
-    else
-        EnableNoclip()
-    end
+    if NoclipActive then DisableNoclip() else EnableNoclip() end
 end
 
--- Обновление при смене персонажа
 Player.CharacterAdded:Connect(function()
     task.wait(0.1)
     if NoclipActive then
@@ -267,7 +249,6 @@ end)
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if GameProcessed then return end
     
-    -- Ожидание выбора клавиши
     if IsWaitingForKey then
         if Input.KeyCode ~= Enum.KeyCode.Unknown then
             Hotkey = Input.KeyCode
@@ -282,18 +263,14 @@ UserInputService.InputBegan:Connect(function(Input, GameProcessed)
         return
     end
     
-    -- Горячая клавиша для ноклипа
     if Input.KeyCode == Hotkey then
         ToggleNoclip()
     end
 end)
 
--- ===== КНОПКИ =====
-
 OnBtn.MouseButton1Click:Connect(EnableNoclip)
 OffBtn.MouseButton1Click:Connect(DisableNoclip)
 
--- Управление окном
 MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
@@ -307,4 +284,4 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 UpdateHotkeyDisplay()
-print("✅ Noclip загружен! Клавиша: LeftAlt (можно сменить)")
+print("✅ Noclip (Client-Side) загружен!")
