@@ -1,15 +1,14 @@
--- [[ NOCLIP (Client-Side + Position Reset) ]]
--- Минимальное вмешательство в физику, сложно детектится
+-- [[ NOCLIP для Steal an Egg (микро-телепортации) ]]
+-- Работает через серию быстрых маленьких телепортов, чтобы обойти античит.
 
 local Player = game.Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local NoclipActive = false
+local TeleportConnection = nil
 local Minimized = false
 local Hotkey = Enum.KeyCode.LeftAlt
-local OriginalCollisions = {}
-local HeartbeatConnection = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -137,60 +136,47 @@ HotkeyLabel.Parent = Content
 
 -- ===== ФУНКЦИИ =====
 
-local function SaveCollisions()
-    OriginalCollisions = {}
-    local Character = Player.Character
-    if not Character then return end
-    
-    for _, part in pairs(Character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            OriginalCollisions[part] = part.CanCollide
-        end
-    end
-end
-
-local function RestoreCollisions()
-    for part, value in pairs(OriginalCollisions) do
-        if part and part.Parent then
-            part.CanCollide = value
-        end
-    end
-    OriginalCollisions = {}
-end
-
 local function EnableNoclip()
     if NoclipActive then return end
     NoclipActive = true
-    
+
     StatusLabel.Text = "🟢 ВКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
-    
-    local Character = Player.Character
-    if not Character then return end
-    
-    SaveCollisions()
-    
-    for _, part in pairs(Character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
+
+    if TeleportConnection then
+        TeleportConnection:Disconnect()
     end
-    
-    if HeartbeatConnection then
-        HeartbeatConnection:Disconnect()
-    end
-    
-    -- Постоянно обновляем коллизии (анти-восстановление)
-    HeartbeatConnection = RunService.Heartbeat:Connect(function()
+
+    -- Основной цикл: микро-телепортации
+    TeleportConnection = RunService.Heartbeat:Connect(function()
         if not NoclipActive then return end
-        
+
         local Character = Player.Character
         if not Character then return end
-        
-        for _, part in pairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
+
+        local RootPart = Character:FindFirstChild("HumanoidRootPart")
+        if not RootPart then return end
+
+        -- Получаем направление камеры
+        local Camera = workspace.CurrentCamera
+        if not Camera then return end
+
+        local LookDirection = Camera.CFrame.LookVector
+        -- Двигаемся только по горизонтали (X и Z), чтобы не улететь в небо
+        local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
+
+        -- Размер одного шага (чем меньше, тем безопаснее)
+        local StepSize = 0.15
+        -- Количество шагов за один цикл
+        local Steps = 3
+
+        for i = 1, Steps do
+            -- Вычисляем новую позицию
+            local NewPosition = RootPart.Position + (HorizontalLook * StepSize)
+            -- Телепортируем RootPart
+            RootPart.CFrame = CFrame.new(NewPosition)
+            -- Небольшая задержка между шагами
+            task.wait()
         end
     end)
 end
@@ -198,24 +184,27 @@ end
 local function DisableNoclip()
     if not NoclipActive then return end
     NoclipActive = false
-    
+
     StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
-    
-    if HeartbeatConnection then
-        HeartbeatConnection:Disconnect()
-        HeartbeatConnection = nil
+
+    if TeleportConnection then
+        TeleportConnection:Disconnect()
+        TeleportConnection = nil
     end
-    
-    RestoreCollisions()
 end
 
 local function ToggleNoclip()
-    if NoclipActive then DisableNoclip() else EnableNoclip() end
+    if NoclipActive then
+        DisableNoclip()
+    else
+        EnableNoclip()
+    end
 end
 
+-- Сброс при смене персонажа
 Player.CharacterAdded:Connect(function()
-    task.wait(0.1)
+    task.wait(0.5)
     if NoclipActive then
         DisableNoclip()
         EnableNoclip()
@@ -246,4 +235,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-print("✅ Noclip (Client-Side) загружен! Клавиша LeftAlt")
+print("✅ Noclip (микро-телепорты) загружен! Клавиша LeftAlt")
