@@ -1,5 +1,5 @@
--- [[ NOCLIP (BodyVelocity) с регулировкой скорости движения ]]
--- Ползунок регулирует скорость движения вперёд
+-- [[ NOCLIP (BodyVelocity) с полем ввода скорости ]]
+-- Поле ввода регулирует скорость движения вперёд (5-100)
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -21,8 +21,8 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 260, 0, 220)
-MainFrame.Position = UDim2.new(0.5, -130, 0.5, -110)
+MainFrame.Size = UDim2.new(0, 240, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -120, 0.5, -100)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -48,7 +48,7 @@ TitleCorner.Parent = TitleBar
 local TitleText = Instance.new("TextLabel")
 TitleText.Size = UDim2.new(0.7, 0, 1, 0)
 TitleText.Position = UDim2.new(0.05, 0, 0, 0)
-TitleText.Text = "🧱 NOCLIP (BV)"
+TitleText.Text = "🧱 NOCLIP"
 TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleText.TextSize = 16
 TitleText.TextXAlignment = Enum.TextXAlignment.Left
@@ -131,48 +131,40 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- Ползунок скорости
+-- Поле ввода скорости (вместо ползунка)
 local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.5, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
-SpeedLabel.Text = "🚀 СКОРОСТЬ ДВИЖЕНИЯ"
+SpeedLabel.Size = UDim2.new(0.4, 0, 0, 18)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0.42, 0)
+SpeedLabel.Text = "🚀 СКОРОСТЬ"
 SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 SpeedLabel.TextSize = 11
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
 SpeedLabel.BackgroundTransparency = 1
 SpeedLabel.Parent = Content
 
-local SpeedSlider = Instance.new("ScrollingFrame")
-SpeedSlider.Size = UDim2.new(0.55, 0, 0, 18)
-SpeedSlider.Position = UDim2.new(0.05, 0, 0.5, 0)
-SpeedSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
-SpeedSlider.BorderSizePixel = 0
-SpeedSlider.ScrollBarThickness = 8
-SpeedSlider.CanvasSize = UDim2.new(0, 0, 0, 0)
-SpeedSlider.Parent = Content
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Size = UDim2.new(0.35, 0, 0, 28)
+SpeedInput.Position = UDim2.new(0.05, 0, 0.5, 0)
+SpeedInput.Text = "25"
+SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedInput.TextSize = 14
+SpeedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+SpeedInput.BorderSizePixel = 0
+SpeedInput.Parent = Content
 
 local SpeedCorner = Instance.new("UICorner")
-SpeedCorner.CornerRadius = UDim.new(0, 9)
-SpeedCorner.Parent = SpeedSlider
+SpeedCorner.CornerRadius = UDim.new(0, 6)
+SpeedCorner.Parent = SpeedInput
 
-local SpeedValue = Instance.new("TextLabel")
-SpeedValue.Size = UDim2.new(0.2, 0, 0, 18)
-SpeedValue.Position = UDim2.new(0.75, 0, 0.5, 0)
-SpeedValue.Text = "25"
-SpeedValue.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedValue.TextSize = 14
-SpeedValue.TextXAlignment = Enum.TextXAlignment.Right
-SpeedValue.BackgroundTransparency = 1
-SpeedValue.Parent = Content
-
-local function UpdateSpeed()
-    local percent = SpeedSlider.CanvasPosition.Y / 100
-    Speed = math.floor(percent * 95) + 5
-    SpeedValue.Text = tostring(Speed)
-end
-
-SpeedSlider:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateSpeed)
-SpeedSlider.MouseButton1Down:Connect(UpdateSpeed)
+SpeedInput.FocusLost:Connect(function()
+    local val = tonumber(SpeedInput.Text)
+    if val and val >= 5 and val <= 100 then
+        Speed = val
+        SpeedInput.Text = tostring(Speed)
+    else
+        SpeedInput.Text = tostring(Speed)
+    end
+end)
 
 -- Горячая клавиша
 local HotkeyLabel = Instance.new("TextLabel")
@@ -276,7 +268,6 @@ local function EnableNoclip()
             local LookDirection = Camera.CFrame.LookVector
             local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
             
-            -- ПРИМЕНЯЕМ СКОРОСТЬ ИЗ ПОЛЗУНКА
             if BodyVelocity then
                 BodyVelocity.Velocity = HorizontalLook * Speed
             end
@@ -374,7 +365,7 @@ MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 260, 0, 35) or UDim2.new(0, 260, 0, 220)
+    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 35) or UDim2.new(0, 240, 0, 200)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -383,4 +374,4 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 UpdateHotkeyDisplay()
-print("✅ Noclip (BodyVelocity) загружен! Ползунок регулирует скорость движения вперёд.")
+print("✅ Noclip (BodyVelocity) загружен! Скорость регулируется полем ввода.")
