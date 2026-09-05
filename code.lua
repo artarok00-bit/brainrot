@@ -1,5 +1,6 @@
--- [[ NOCLIP (BodyVelocity) с полем ввода скорости ]]
--- Поле ввода регулирует скорость движения вперёд (5-100)
+-- [[ NOCLIP (BodyVelocity) — ускоренная версия ]]
+-- Включается/выключается кнопками или клавишей LeftAlt
+-- Скорость фиксированная (60)
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -9,7 +10,7 @@ local NoclipActive = false
 local Minimized = false
 local BodyVelocity = nil
 local BodyGyro = nil
-local Speed = 25
+local Speed = 60
 local Hotkey = Enum.KeyCode.LeftAlt
 local IsWaitingForKey = false
 local HeartbeatConnection = nil
@@ -21,8 +22,8 @@ ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 240, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -120, 0.5, -100)
+MainFrame.Size = UDim2.new(0, 220, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -110, 0.5, -75)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -93,7 +94,7 @@ Content.Parent = MainFrame
 -- Кнопка ВКЛ
 local OnBtn = Instance.new("TextButton")
 OnBtn.Size = UDim2.new(0.4, 0, 0, 38)
-OnBtn.Position = UDim2.new(0.05, 0, 0.04, 0)
+OnBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
 OnBtn.Text = "✅ ВКЛ"
 OnBtn.TextColor3 = Color3.new(1, 1, 1)
 OnBtn.TextSize = 15
@@ -108,7 +109,7 @@ OnCorner.Parent = OnBtn
 -- Кнопка ВЫКЛ
 local OffBtn = Instance.new("TextButton")
 OffBtn.Size = UDim2.new(0.4, 0, 0, 38)
-OffBtn.Position = UDim2.new(0.55, 0, 0.04, 0)
+OffBtn.Position = UDim2.new(0.55, 0, 0.05, 0)
 OffBtn.Text = "❌ ВЫКЛ"
 OffBtn.TextColor3 = Color3.new(1, 1, 1)
 OffBtn.TextSize = 15
@@ -123,7 +124,7 @@ OffCorner.Parent = OffBtn
 -- Статус
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 20)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.27, 0)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
 StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
 StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
 StatusLabel.TextSize = 13
@@ -131,92 +132,18 @@ StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Parent = Content
 
--- Поле ввода скорости (вместо ползунка)
-local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.4, 0, 0, 18)
-SpeedLabel.Position = UDim2.new(0.05, 0, 0.42, 0)
-SpeedLabel.Text = "🚀 СКОРОСТЬ"
-SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
-SpeedLabel.TextSize = 11
-SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
-SpeedLabel.BackgroundTransparency = 1
-SpeedLabel.Parent = Content
-
-local SpeedInput = Instance.new("TextBox")
-SpeedInput.Size = UDim2.new(0.35, 0, 0, 28)
-SpeedInput.Position = UDim2.new(0.05, 0, 0.5, 0)
-SpeedInput.Text = "25"
-SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-SpeedInput.TextSize = 14
-SpeedInput.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-SpeedInput.BorderSizePixel = 0
-SpeedInput.Parent = Content
-
-local SpeedCorner = Instance.new("UICorner")
-SpeedCorner.CornerRadius = UDim.new(0, 6)
-SpeedCorner.Parent = SpeedInput
-
-SpeedInput.FocusLost:Connect(function()
-    local val = tonumber(SpeedInput.Text)
-    if val and val >= 5 and val <= 100 then
-        Speed = val
-        SpeedInput.Text = tostring(Speed)
-    else
-        SpeedInput.Text = tostring(Speed)
-    end
-end)
-
 -- Горячая клавиша
 local HotkeyLabel = Instance.new("TextLabel")
-HotkeyLabel.Size = UDim2.new(0.35, 0, 0, 18)
-HotkeyLabel.Position = UDim2.new(0.05, 0, 0.72, 0)
-HotkeyLabel.Text = "КЛАВИША:"
+HotkeyLabel.Size = UDim2.new(0.4, 0, 0, 18)
+HotkeyLabel.Position = UDim2.new(0.05, 0, 0.65, 0)
+HotkeyLabel.Text = "КЛАВИША: LALT"
 HotkeyLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 HotkeyLabel.TextSize = 11
 HotkeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 HotkeyLabel.BackgroundTransparency = 1
 HotkeyLabel.Parent = Content
 
-local HotkeyDisplay = Instance.new("TextLabel")
-HotkeyDisplay.Size = UDim2.new(0.3, 0, 0, 18)
-HotkeyDisplay.Position = UDim2.new(0.35, 0, 0.72, 0)
-HotkeyDisplay.Text = "LALT"
-HotkeyDisplay.TextColor3 = Color3.fromRGB(255, 255, 255)
-HotkeyDisplay.TextSize = 12
-HotkeyDisplay.TextXAlignment = Enum.TextXAlignment.Left
-HotkeyDisplay.BackgroundTransparency = 1
-HotkeyDisplay.Parent = Content
-
-local ChangeKeyBtn = Instance.new("TextButton")
-ChangeKeyBtn.Size = UDim2.new(0.25, 0, 0, 22)
-ChangeKeyBtn.Position = UDim2.new(0.7, 0, 0.7, 0)
-ChangeKeyBtn.Text = "СМЕНИТЬ"
-ChangeKeyBtn.TextColor3 = Color3.new(1, 1, 1)
-ChangeKeyBtn.TextSize = 11
-ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
-ChangeKeyBtn.BorderSizePixel = 0
-ChangeKeyBtn.Parent = Content
-
-local ChangeKeyCorner = Instance.new("UICorner")
-ChangeKeyCorner.CornerRadius = UDim.new(0, 5)
-ChangeKeyCorner.Parent = ChangeKeyBtn
-
-local WaitingLabel = Instance.new("TextLabel")
-WaitingLabel.Size = UDim2.new(0.9, 0, 0, 18)
-WaitingLabel.Position = UDim2.new(0.05, 0, 0.87, 0)
-WaitingLabel.Text = ""
-WaitingLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-WaitingLabel.TextSize = 11
-WaitingLabel.TextXAlignment = Enum.TextXAlignment.Center
-WaitingLabel.BackgroundTransparency = 1
-WaitingLabel.Parent = Content
-
 -- ===== ФУНКЦИИ =====
-
-local function UpdateHotkeyDisplay()
-    local name = tostring(Hotkey):gsub("Enum.KeyCode.", "")
-    HotkeyDisplay.Text = name
-end
 
 local function EnableNoclip()
     if NoclipActive then return end
@@ -326,46 +253,24 @@ Player.CharacterAdded:Connect(function()
     end
 end)
 
--- ===== ВЫБОР КЛАВИШИ =====
+-- ===== КНОПКИ =====
 
-ChangeKeyBtn.MouseButton1Click:Connect(function()
-    if IsWaitingForKey then return end
-    IsWaitingForKey = true
-    WaitingLabel.Text = "⏳ Нажми любую клавишу..."
-    ChangeKeyBtn.Text = "⏳..."
-    ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(200, 200, 100)
-end)
+OnBtn.MouseButton1Click:Connect(EnableNoclip)
+OffBtn.MouseButton1Click:Connect(DisableNoclip)
 
+-- Горячая клавиша: LeftAlt
 UserInputService.InputBegan:Connect(function(Input, GameProcessed)
     if GameProcessed then return end
-    
-    if IsWaitingForKey then
-        if Input.KeyCode ~= Enum.KeyCode.Unknown then
-            Hotkey = Input.KeyCode
-            UpdateHotkeyDisplay()
-            IsWaitingForKey = false
-            WaitingLabel.Text = "✅ Клавиша изменена!"
-            ChangeKeyBtn.Text = "СМЕНИТЬ"
-            ChangeKeyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
-            task.wait(0.5)
-            WaitingLabel.Text = ""
-        end
-        return
-    end
-    
     if Input.KeyCode == Hotkey then
         ToggleNoclip()
     end
 end)
 
-OnBtn.MouseButton1Click:Connect(EnableNoclip)
-OffBtn.MouseButton1Click:Connect(DisableNoclip)
-
 MinBtn.MouseButton1Click:Connect(function()
     Minimized = not Minimized
     Content.Visible = not Minimized
     MinBtn.Text = Minimized and "+" or "–"
-    MainFrame.Size = Minimized and UDim2.new(0, 240, 0, 35) or UDim2.new(0, 240, 0, 200)
+    MainFrame.Size = Minimized and UDim2.new(0, 220, 0, 35) or UDim2.new(0, 220, 0, 150)
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
@@ -373,5 +278,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-UpdateHotkeyDisplay()
-print("✅ Noclip (BodyVelocity) загружен! Скорость регулируется полем ввода.")
+print("✅ Noclip (ускоренный) загружен! Скорость 60, клавиша LeftAlt")
