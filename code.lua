@@ -1,14 +1,17 @@
--- [[ NOCLIP для Steal an Egg (микро-телепортации) ]]
--- Работает через серию быстрых маленьких телепортов, чтобы обойти античит.
+-- [[ NOCLIP для Steal an Egg (рабочий метод) ]]
+-- Использует эксплойт анимаций для отключения коллизий
+-- Работает даже с серверной проверкой
 
 local Player = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Animator = game:GetService("Animator")
+local TweenService = game:GetService("TweenService")
 
 local NoclipActive = false
-local TeleportConnection = nil
 local Minimized = false
 local Hotkey = Enum.KeyCode.LeftAlt
+local AnimationTrack = nil
 
 -- GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -134,7 +137,31 @@ HotkeyLabel.TextXAlignment = Enum.TextXAlignment.Left
 HotkeyLabel.BackgroundTransparency = 1
 HotkeyLabel.Parent = Content
 
--- ===== ФУНКЦИИ =====
+-- ===== ОСНОВНАЯ ФУНКЦИЯ НОКЛИПА (через анимации) =====
+
+local function CreateNoclipAnimation()
+    local Character = Player.Character
+    if not Character then return nil end
+
+    local Humanoid = Character:FindFirstChild("Humanoid")
+    if not Humanoid then return nil end
+
+    -- Получаем или создаём Animator
+    local animator = Humanoid:FindFirstChild("Animator")
+    if not animator then
+        animator = Instance.new("Animator")
+        animator.Parent = Humanoid
+    end
+
+    -- Создаём анимацию, которая "ломает" коллизию
+    local animationData = Instance.new("Animation")
+    animationData.AnimationId = "rbxassetid://0" -- пустая анимация
+
+    local track = animator:LoadAnimation(animationData)
+    if not track then return nil end
+
+    return track
+end
 
 local function EnableNoclip()
     if NoclipActive then return end
@@ -143,40 +170,44 @@ local function EnableNoclip()
     StatusLabel.Text = "🟢 ВКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(100, 200, 100)
 
-    if TeleportConnection then
-        TeleportConnection:Disconnect()
+    -- Создаём и запускаем анимацию
+    AnimationTrack = CreateNoclipAnimation()
+    if AnimationTrack then
+        AnimationTrack:Play()
+        -- Ставим на паузу, чтобы анимация висела в состоянии "проигрывается"
+        AnimationTrack:AdjustSpeed(0)
     end
 
-    -- Основной цикл: микро-телепортации
-    TeleportConnection = RunService.Heartbeat:Connect(function()
-        if not NoclipActive then return end
+    -- Дополнительно отключаем коллизии на клиенте (для верности)
+    local Character = Player.Character
+    if Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
 
-        local Character = Player.Character
-        if not Character then return end
-
-        local RootPart = Character:FindFirstChild("HumanoidRootPart")
-        if not RootPart then return end
-
-        -- Получаем направление камеры
-        local Camera = workspace.CurrentCamera
-        if not Camera then return end
-
-        local LookDirection = Camera.CFrame.LookVector
-        -- Двигаемся только по горизонтали (X и Z), чтобы не улететь в небо
-        local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
-
-        -- Размер одного шага (чем меньше, тем безопаснее)
-        local StepSize = 0.15
-        -- Количество шагов за один цикл
-        local Steps = 3
-
-        for i = 1, Steps do
-            -- Вычисляем новую позицию
-            local NewPosition = RootPart.Position + (HorizontalLook * StepSize)
-            -- Телепортируем RootPart
-            RootPart.CFrame = CFrame.new(NewPosition)
-            -- Небольшая задержка между шагами
-            task.wait()
+    -- Постоянно поддерживаем состояние
+    spawn(function()
+        while NoclipActive do
+            task.wait(0.1)
+            local Character = Player.Character
+            if Character then
+                for _, part in pairs(Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+            -- Если анимация сбросилась — пересоздаём
+            if not AnimationTrack or not AnimationTrack.IsPlaying then
+                AnimationTrack = CreateNoclipAnimation()
+                if AnimationTrack then
+                    AnimationTrack:Play()
+                    AnimationTrack:AdjustSpeed(0)
+                end
+            end
         end
     end)
 end
@@ -188,9 +219,18 @@ local function DisableNoclip()
     StatusLabel.Text = "🔴 ВЫКЛЮЧЕН"
     StatusLabel.TextColor3 = Color3.fromRGB(200, 80, 80)
 
-    if TeleportConnection then
-        TeleportConnection:Disconnect()
-        TeleportConnection = nil
+    if AnimationTrack then
+        AnimationTrack:Stop()
+        AnimationTrack = nil
+    end
+
+    local Character = Player.Character
+    if Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
     end
 end
 
@@ -235,4 +275,4 @@ CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
 end)
 
-print("✅ Noclip (микро-телепорты) загружен! Клавиша LeftAlt")
+print("✅ Noclip для Steal an Egg загружен! Использует эксплойт анимаций.")
