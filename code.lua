@@ -1,6 +1,5 @@
--- [[ NOCLIP (BodyVelocity) с ползунком скорости ]]
--- Использует BodyVelocity для "вдавливания" в стены
--- Ползунок скорости от 5 до 100
+-- [[ NOCLIP (BodyVelocity) с регулировкой скорости движения ]]
+-- Ползунок регулирует скорость движения вперёд
 
 local Player = game.Players.LocalPlayer
 local UserInputService = game:GetService("UserInputService")
@@ -134,9 +133,9 @@ StatusLabel.Parent = Content
 
 -- Ползунок скорости
 local SpeedLabel = Instance.new("TextLabel")
-SpeedLabel.Size = UDim2.new(0.4, 0, 0, 18)
+SpeedLabel.Size = UDim2.new(0.5, 0, 0, 18)
 SpeedLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
-SpeedLabel.Text = "🚀 СКОРОСТЬ"
+SpeedLabel.Text = "🚀 СКОРОСТЬ ДВИЖЕНИЯ"
 SpeedLabel.TextColor3 = Color3.fromRGB(180, 180, 200)
 SpeedLabel.TextSize = 11
 SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -277,6 +276,7 @@ local function EnableNoclip()
             local LookDirection = Camera.CFrame.LookVector
             local HorizontalLook = Vector3.new(LookDirection.X, 0, LookDirection.Z).Unit
             
+            -- ПРИМЕНЯЕМ СКОРОСТЬ ИЗ ПОЛЗУНКА
             if BodyVelocity then
                 BodyVelocity.Velocity = HorizontalLook * Speed
             end
@@ -383,4 +383,4 @@ CloseBtn.MouseButton1Click:Connect(function()
 end)
 
 UpdateHotkeyDisplay()
-print("✅ Noclip (BodyVelocity) загружен! Скорость регулируется ползунком.")
+print("✅ Noclip (BodyVelocity) загружен! Ползунок регулирует скорость движения вперёд.")
